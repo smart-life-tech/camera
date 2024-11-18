@@ -4,8 +4,9 @@ import os
 import RPi.GPIO as GPIO
 from picamera import PiCamera
 import threading
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
+import shutil
 
 # Configuration
 IMAGE_DIR = '/home/pi/images'
@@ -117,9 +118,12 @@ def start_http_server():
 
 # Function to send images to the phone
 def send_images_to_phone(images):
-    # Placeholder function to send images to the phone over Wi-Fi/USB
+    # Transfer images to the phone via HTTP (Wi-Fi)
+    print("Transferring images to phone...")
     for image in images:
         print(f"Transferring {image} to phone...")
+        shutil.copy(image, "/var/www/html/")  # Copy image to web server directory
+        time.sleep(1)  # Simulate transfer delay
 
 # Function to wait for button press to trigger capture
 def wait_for_button_press():
