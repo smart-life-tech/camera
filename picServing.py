@@ -4,11 +4,11 @@ import threading
 from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
 import socket
-
+import subprocess
 IMAGE_DIR = 'C:/Users/USER/Downloads/'  # Ensure this is the correct directory
 IMAGE_DIR=input("Enter the directory path to the photos to be served: ")
 PORT = 8080
-
+WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
 def get_ip_address():
     # Get the IP address of the Raspberry Pi
     hostname = socket.gethostname()  # Get the hostname of the Pi
@@ -38,6 +38,10 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             # Handle image download
             image_name = self.path.split('/')[-1]
             self.download_image(image_name)
+        elif self.path == '/reboot':
+            self.reboot_system()
+        elif self.path == '/shutdown':
+            self.shutdown_system()
         else:
             # Serve the requested image file
             return super().do_GET()
@@ -49,6 +53,21 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
+        self.wfile.write(b"<h3>Update Wi-Fi Credentials</h3>")
+        self.wfile.write(b"""
+        <form action="/update_wifi" method="POST">
+            <label for="ssid">SSID:</label><br>
+            <input type="text" id="ssid" name="ssid" required><br>
+            <label for="password">Password:</label><br>
+            <input type="password" id="password" name="password" required><br><br>
+            <input type="submit" value="Update Wi-Fi">
+        </form>
+        """)
+
+        self.wfile.write(b"<br><h3>System Controls</h3>")
+        self.wfile.write(b'<a href="/reboot">Reboot</a> | <a href="/shutdown">Shutdown</a>')
+        self.wfile.write(b"</body></html>")
+        
         self.wfile.write(b"<html><head><title>Images</title>")
         self.wfile.write(b"<style>img { width: 150px; margin: 10px; } </style></head><body>")
         self.wfile.write(b"<h2>Captured Images</h2>")
@@ -88,7 +107,61 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
             self.wfile.write(b"Image not found.")
+    
+    def update_wifi_credentials(self):
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length).decode()
+        params = dict(p.split('=') for p in post_data.split('&'))
 
+        ssid = params.get('ssid')
+        password = params.get('password')
+
+        if not ssid or not password:
+            self.send_response(400)
+            self.end_headers()
+            self.wfile.write(b"SSID and Password are required.")
+            return
+
+        # Update wpa_supplicant.conf
+        try:
+            with open(WPA_SUPPLICANT_FILE, 'w') as f:
+                f.write(f"""country=US
+                ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+                update_config=1
+
+                network={{
+                    ssid="{ssid}"
+                    psk="{password}"
+                }}
+                """)
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Wi-Fi credentials updated. Please reboot the device.")
+        except Exception as e:
+            self.send_response(500)
+            self.end_headers()
+            self.wfile.write(b"Failed to update Wi-Fi credentials.")
+            print(f"Error: {e}")
+
+    def reboot_system(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Rebooting system...")
+        print("Rebooting system...")
+        subprocess.run(['sudo', 'reboot'])
+
+    def shutdown_system(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Shutting down system...")
+        print("Shutting down system...")
+        subprocess.run(['sudo', 'shutdown', 'now'])
+
+def start_http_server():
+    os.chdir(IMAGE_DIR)
+    with TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
+        print(f"Serving images on port {PORT}...")
+        httpd.serve_forever()
 # Start the server with custom handler
 def start_http_server():
     os.chdir(IMAGE_DIR)  # Change directory to the image folder
