@@ -7,7 +7,7 @@ camera = PiCamera()
 camera.resolution = (2048, 2048)
 camera.framerate = 15
 
-# Define the server (Pi3) IP and port for communication
+# Define the server (Pi3rd) IP and port for communication
 PI3_IP = '192.168.0.3'  # Pi3's fixed IP address
 PORT = 5000
 
