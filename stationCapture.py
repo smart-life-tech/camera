@@ -2,9 +2,9 @@ import time
 import socket
 import os
 import RPi.GPIO as GPIO
-from picamera import PiCamera
+from picamera2 import Picamera2
 import threading
-from http.server import SimpleHTTPRequestHandler
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 from socketserver import TCPServer
 import shutil
 
@@ -14,9 +14,14 @@ PORT = 8080  # HTTP server port for file transfers and commands
 CAMERA_PORT = 5000  # Port for Pi-to-Pi communication
 
 # Setup Pi3 camera
-camera = PiCamera()
-camera.resolution = (2048, 2048)
-camera.framerate = 15
+# Initialize the camera
+camera = Picamera2()
+# Configure the camera with default settings
+camera.configure(camera.create_still_configuration(main={"size": camera.sensor_resolution}))
+
+# Start the camera
+camera.start()
+
 
 # Define static IP addresses of Pi1 and Pi2
 PI1_IP = '192.168.0.1'
@@ -33,10 +38,7 @@ if not os.path.exists(IMAGE_DIR):
 
 # Capture image on Pi3
 def capture_image(filename):
-    camera.start_preview()
-    time.sleep(2)  # Warm up the camera
-    camera.capture(filename)
-    camera.stop_preview()
+    camera.capture_file(filename)
 
 # Send capture trigger to Pi1 and Pi2
 def send_trigger_to_pis():
