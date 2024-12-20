@@ -9,7 +9,7 @@ from socketserver import TCPServer
 import shutil
 
 # Configuration
-IMAGE_DIR = '/home/pi/images'
+IMAGE_DIR = '/home/user/camera'
 PORT = 8080  # HTTP server port for file transfers and commands
 CAMERA_PORT = 5000  # Port for Pi-to-Pi communication
 
