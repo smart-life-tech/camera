@@ -7,12 +7,12 @@ import threading
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from socketserver import TCPServer
 import shutil
-
+import subprocess
 # Configuration
 IMAGE_DIR = '/home/user/camera'
 PORT = 8080  # HTTP server port for file transfers and commands
 CAMERA_PORT = 5000  # Port for Pi-to-Pi communication
-
+WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
 # Setup Pi3 camera
 # Initialize the camera
 camera = Picamera2()
@@ -84,32 +84,138 @@ def start_server():
 
 # Custom HTTP handler for commands and file serving
 class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
-
     def do_GET(self):
-        if self.path == '/capture':
-            print("Received capture command from phone.")
-            images = start_server()
-            send_images_to_phone(images)
+        if self.path == '/':
+            # Serve index page with images list
+            self.list_images()
+        elif self.path.startswith('/delete/'):
+            # Handle image deletion
+            image_name = self.path.split('/')[-1]
+            self.delete_image(image_name)
+            # After deletion, serve the updated list
+            self.list_images()
+        elif self.path.startswith('/download/'):
+            # Handle image download
+            image_name = self.path.split('/')[-1]
+            self.download_image(image_name)
+        elif self.path == '/reboot':
+            self.reboot_system()
+        elif self.path == '/shutdown':
+            self.shutdown_system()
+        else:
+            # Serve the requested image file
+            return super().do_GET()
+
+    def list_images(self):
+        # List available images and add delete button for each image
+        images = [f for f in os.listdir(IMAGE_DIR) if f.endswith('.jpg')]
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+
+        self.wfile.write(b"<h3>Update Wi-Fi Credentials</h3>")
+        self.wfile.write(b"""
+        <form action="/update_wifi" method="POST">
+            <label for="ssid">SSID:</label><br>
+            <input type="text" id="ssid" name="ssid" required><br>
+            <label for="password">Password:</label><br>
+            <input type="password" id="password" name="password" required><br><br>
+            <input type="submit" value="Update Wi-Fi">
+        </form>
+        """)
+
+        self.wfile.write(b"<br><h3>System Controls</h3>")
+        self.wfile.write(b'<a href="/reboot">Reboot</a> | <a href="/shutdown">Shutdown</a>')
+        self.wfile.write(b"</body></html>")
+        
+        self.wfile.write(b"<html><head><title>Images</title>")
+        self.wfile.write(b"<style>img { width: 150px; margin: 10px; } </style></head><body>")
+        self.wfile.write(b"<h2>Captured Images</h2>")
+        
+        # Display images as thumbnails and links to delete them
+        for image in images:
+            image_url = f"/{image}"
+            download_url = f"/download/{image}"  # Download URL
+            self.wfile.write(f'<div style="display:inline-block; text-align:center; margin:10px;">'.encode())
+            self.wfile.write(f'<a href="{image_url}"><img src="{image_url}" alt="{image}"></a><br>'.encode())
+            self.wfile.write(f'<a href="/delete/{image}">Delete</a>'.encode())
+            self.wfile.write(f'<a href="{download_url}">Download</a>'.encode())  # Add download link
+            self.wfile.write(b"</div>")
+
+        self.wfile.write(b"</body></html>")
+
+    def delete_image(self, image_name):
+        image_path = os.path.join(IMAGE_DIR, image_name)
+        try:
+            os.remove(image_path)
+            print(f"Deleted image: {image_name}")
+        except Exception as e:
+            print(f"Error deleting image: {e}")
+    def download_image(self, image_name):
+        """Serve the image as a download."""
+        file_path = os.path.join(IMAGE_DIR, image_name)  # Get full path of the image
+        if os.path.isfile(file_path):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/octet-stream')  # Set content type for download
+            self.send_header('Content-Disposition', f'attachment; filename={image_name}')  # Force download
+            self.end_headers()
+
+            with open(file_path, 'rb') as f:
+                self.wfile.write(f.read())
+        else:
+            # If the file doesn't exist, send 404
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b"Image not found.")
+    
+    def update_wifi_credentials(self):
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length).decode()
+        params = dict(p.split('=') for p in post_data.split('&'))
+
+        ssid = params.get('ssid')
+        password = params.get('password')
+
+        if not ssid or not password:
+            self.send_response(400)
+            self.end_headers()
+            self.wfile.write(b"SSID and Password are required.")
+            return
+
+        # Update wpa_supplicant.conf
+        try:
+            with open(WPA_SUPPLICANT_FILE, 'w') as f:
+                f.write(f"""country=US
+                ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+                update_config=1
+
+                network={{
+                    ssid="{ssid}"
+                    psk="{password}"
+                }}
+                """)
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(b"Images captured and sent to phone.")
-        elif self.path.startswith('/delete'):
-            print("Received delete command.")
-            folder_to_delete = self.path.split('/')[-1]
-            folder_path = os.path.join(IMAGE_DIR, folder_to_delete)
-            if os.path.exists(folder_path):
-                os.system(f'rm -rf {folder_path}')
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(f"Deleted folder: {folder_to_delete}".encode())
-            else:
-                self.send_response(404)
-                self.end_headers()
-                self.wfile.write(b"Folder not found")
-        else:
-            # Serve images for download
-            super().do_GET()
+            self.wfile.write(b"Wi-Fi credentials updated. Please reboot the device.")
+        except Exception as e:
+            self.send_response(500)
+            self.end_headers()
+            self.wfile.write(b"Failed to update Wi-Fi credentials.")
+            print(f"Error: {e}")
 
+    def reboot_system(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Rebooting system...")
+        print("Rebooting system...")
+        subprocess.run(['sudo', 'reboot'])
+
+    def shutdown_system(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Shutting down system...")
+        print("Shutting down system...")
+        subprocess.run(['sudo', 'shutdown', 'now'])
 # Function to start the HTTP server
 def start_http_server():
     os.chdir(IMAGE_DIR)  # Change directory to the image folder
