@@ -1,44 +1,33 @@
 import cv2
-import subprocess
-import os
 
-# Define the output video file name
-video_file = 'output.h264'
+# Initialize the camera (0 usually refers to the default camera)
+cap = cv2.VideoCapture(0)
 
-# Start the libcamera-vid process
-process = subprocess.Popen(['libcamera-vid', '--codec', 'h264', '-o', video_file, '--inline'], stdout=subprocess.PIPE)
-
-# Wait a few seconds to ensure the video file is created
-import time
-time.sleep(5)  # Adjust the sleep time as needed
-
-# Release the libcamera-vid process
-process.terminate()
-
-# Verify if the video file exists
-if not os.path.exists(video_file):
-    print(f"Error: {video_file} not found.")
-    exit()
-
-# Open the video file using OpenCV
-cap = cv2.VideoCapture(video_file)
-
+# Check if the camera opened successfully
 if not cap.isOpened():
-    print("Error: Could not open video file.")
+    print("Error: Could not open video device.")
     exit()
+
+# Define the codec and create VideoWriter object
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter('output.avi', fourcc, 20.0, (640, 480))
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
+    # Write the frame to the output file
+    out.write(frame)
+
     # Display the resulting frame
     cv2.imshow('Frame', frame)
 
-    # Press 'q' to exit the video display
+    # Press 'q' to exit the video recording
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 # Release everything when the job is finished
 cap.release()
+out.release()
 cv2.destroyAllWindows()
