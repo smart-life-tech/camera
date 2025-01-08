@@ -9,7 +9,7 @@ from socketserver import TCPServer
 import shutil
 import subprocess
 # Configuration
-IMAGE_DIR = '/home/user/camera'
+IMAGE_DIR = '/root/Documents/camera'
 PORT = 8080  # HTTP server port for file transfers and commands
 CAMERA_PORT = 5000  # Port for Pi-to-Pi communication
 WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
