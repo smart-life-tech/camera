@@ -157,16 +157,16 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         print("Shutting down system...")
         subprocess.run(['sudo', 'shutdown', 'now'])
 
-def start_http_server():
-    os.chdir(IMAGE_DIR)
-    with TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
-        print(f"Serving images on port {PORT}...")
-        httpd.serve_forever()
+# def start_http_server():
+#     os.chdir(IMAGE_DIR)
+#     with TCPServer(("192.168.232.194", PORT), MyHTTPRequestHandler) as httpd:
+#         print(f"Serving images on port {PORT}...")
+#         httpd.serve_forever()
 # Start the server with custom handler
 def start_http_server():
     os.chdir(IMAGE_DIR)  # Change directory to the image folder
-    with TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
-        print(f"Serving images on port {PORT}...")
+    with TCPServer(("192.168.233.194", PORT), MyHTTPRequestHandler) as httpd:
+        print(f"Serving images on portss {PORT}...")
         httpd.serve_forever()
 
 

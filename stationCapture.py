@@ -24,8 +24,8 @@ camera.start()
 
 
 # Define static IP addresses of Pi1 and Pi2
-PI1_IP = '192.168.0.1'
-PI2_IP = '192.168.0.2'
+PI1_IP = '192.168.233.194"'
+PI2_IP = '192.168.233.194"'
 
 # GPIO settings for the button
 BUTTON_PIN = 17  # GPIO pin 17 for the button
@@ -51,7 +51,7 @@ def send_trigger_to_pis():
 def receive_image_from_pis(client_socket, filename):
     with open(filename, 'wb') as f:
         while True:
-            data = client_socket.recv(1024)
+            data = client_socket.recv(2048)
             if not data:
                 break
             f.write(data)
@@ -60,7 +60,7 @@ def receive_image_from_pis(client_socket, filename):
 # Start server to receive images from Pi1 and Pi2
 def start_server():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', CAMERA_PORT))
+        s.bind(('192.168.233.194', CAMERA_PORT))
         s.listen(2)
         print("Waiting for connections from Pi1 and Pi2...")
 
@@ -220,7 +220,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
 def start_http_server():
     os.chdir(IMAGE_DIR)  # Change directory to the image folder
     handler = MyHTTPRequestHandler
-    with HTTPServer(("", PORT), handler) as httpd:
+    with HTTPServer(("192.168.233.194", PORT), handler) as httpd:
         print(f"Serving files and commands on port {PORT}...")
         httpd.serve_forever()
 
