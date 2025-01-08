@@ -7,7 +7,7 @@ import socket
 import subprocess
 IMAGE_DIR = '/root/Documents/camera'  # Ensure this is the correct directory
 #IMAGE_DIR=input("Enter the directory path to the photos to be served: ")
-PORT = 8000
+PORT = 8080
 WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
 def get_ip_address():
     # Get the IP address of the Raspberry Pi
