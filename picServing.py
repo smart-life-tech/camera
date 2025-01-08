@@ -5,7 +5,7 @@ from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
 import socket
 import subprocess
-IMAGE_DIR = '/root/Documents/camera'  # Ensure this is the correct directory
+IMAGE_DIR = '/home/user/camera'  # Ensure this is the correct directory
 #IMAGE_DIR=input("Enter the directory path to the photos to be served: ")
 PORT = 8080
 WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
