@@ -11,7 +11,7 @@ import subprocess
 # Configuration
 IMAGE_DIR = '/root/Documents/camera'
 PORT = 8080  # HTTP server port for file transfers and commands
-CAMERA_PORT = 5000  # Port for Pi-to-Pi communication
+CAMERA_PORT = 8080  # Port for Pi-to-Pi communication
 WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
 # Setup Pi3 camera
 # Initialize the camera
@@ -24,8 +24,8 @@ camera.start()
 
 
 # Define static IP addresses of Pi1 and Pi2
-PI1_IP = '192.168.233.194"'
-PI2_IP = '192.168.233.194"'
+PI1_IP = '192.168.233.194'
+PI2_IP = '192.168.233.194'
 
 # GPIO settings for the button
 BUTTON_PIN = 17  # GPIO pin 17 for the button
