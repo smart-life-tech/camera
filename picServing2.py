@@ -170,7 +170,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         global count 
         #while True: 
         # Capture and save the image
-        elf.send_response(200)
+        self.send_response(200)
         self.end_headers()
         self.wfile.write(b"image captured...")
         print("capturing...") 
