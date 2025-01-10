@@ -6,10 +6,11 @@ from socketserver import TCPServer
 import socket
 import subprocess
 
-IMAGE_DIR = '/user/Documents/camera'  # Ensure this is the correct directory
+IMAGE_DIR = '/home/user/camera'  # Ensure this is the correct directory
 PORT = 8080
 WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
-
+os.system('sudo ip addr add 192.168.233.194/24 dev wlan0')
+time.sleep(5)
 def get_ip_address():
     hostname = socket.gethostname()  # Get the hostname of the Pi
     ip_address = socket.gethostbyname(hostname)  # Get the corresponding IP address
