@@ -5,7 +5,7 @@ from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
 import socket
 import subprocess
-
+import random
 from picamera2 import Picamera2
 
 # Initialize the camera
@@ -175,7 +175,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.wfile.write(b"image captured...")
         print("capturing...") 
         camera.capture_file(f'high_res_image{count}.jpg') 
-        count += 9 
+        count += random(100) 
         print("Image captured!") 
         time.sleep(1) 
         # Wait for 1 second before capturing the next image
