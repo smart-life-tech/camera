@@ -166,10 +166,14 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         subprocess.run(['sudo', 'shutdown', 'now'])
         
     
-    def capture_images(): 
+    def capture_images(self): 
         global count 
         #while True: 
-        # Capture and save the image 
+        # Capture and save the image
+        elf.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"image captured...")
+        print("capturing...") 
         camera.capture_file(f'high_res_image{count}.jpg') 
         count += 1 
         print("Image captured!") 
