@@ -42,6 +42,8 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/':
             self.list_images()
+        elif self.path == '/refresh':
+            self.list_images()
         elif self.path.startswith('/delete/'):
             image_name = self.path.split('/')[-1]
             self.delete_image(image_name)
@@ -55,7 +57,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             self.shutdown_system()
         elif self.path == '/capture':
             self.capture_images()
-            self.list_images()
+            #self.list_images()
         else:
             return super().do_GET()
 
@@ -89,6 +91,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             download_url = f"/download/{image}"
             self.wfile.write(f'<div style="display:inline-block; text-align:center; margin:10px;">'.encode())
             self.wfile.write(f'<a href="{image_url}"><img src="{image_url}" alt="{image}"></a><br>'.encode())
+            self.wfile.write(f'{image}'.encode())
             self.wfile.write(f'<a href="/delete/{image}">Delete</a>'.encode())
             self.wfile.write(f'<a href="{download_url}">Download</a>'.encode())
             self.wfile.write(b"</div>")
@@ -179,7 +182,8 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         count += random.randint(0, 100) 
         print("Image captured!") 
         time.sleep(1) 
-        self.wfile.write(b"image capture done")
+        self.wfile.write(b"image capture done \n")
+        self.wfile.write(b'<a href="/refresh">back home</a>')
         # Wait for 1 second before capturing the next image
 
 def start_http_server():
