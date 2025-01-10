@@ -9,6 +9,7 @@ IMAGE_DIR = '/home/user/camera'  # Ensure this is the correct directory
 #IMAGE_DIR=input("Enter the directory path to the photos to be served: ")
 PORT = 8080
 WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
+os.system('sudo ip addr add 192.168.233.194/24 dev wlan0')
 def get_ip_address():
     # Get the IP address of the Raspberry Pi
     hostname = socket.gethostname()  # Get the hostname of the Pi
