@@ -6,6 +6,21 @@ from socketserver import TCPServer
 import socket
 import subprocess
 
+from picamera2 import Picamera2
+
+# Initialize the camera
+camera = Picamera2()
+
+# Configure the camera with default settings
+camera.configure(camera.create_still_configuration(main={"size": camera.sensor_resolution}))
+
+# Start the camera
+camera.start()
+
+# Allow some time for the camera to initialize
+time.sleep(2)
+count = 0
+
 IMAGE_DIR = '/home/user/camera'  # Ensure this is the correct directory
 PORT = 8080
 WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
@@ -38,6 +53,8 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             self.reboot_system()
         elif self.path == '/shutdown':
             self.shutdown_system()
+        elif self.path == '/capture':
+            self.capture_images()
         else:
             return super().do_GET()
 
@@ -59,7 +76,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         """)
 
         self.wfile.write(b"<br><h3>System Controls</h3>")
-        self.wfile.write(b'<a href="/reboot">Reboot</a> | <a href="/shutdown">Shutdown</a>')
+        self.wfile.write(b'<a href="/reboot">Reboot</a> | <a href="/shutdown">Shutdown</a> | <a href="/capture">Shutdown</a>')
         self.wfile.write(b"</body></html>")
         
         self.wfile.write(b"<html><head><title>Images</title>")
@@ -166,6 +183,14 @@ def delete_image(image_path):
     except Exception as e:
         print(f"Error deleting image: {e}")
 
+def capture_images(): 
+    global count 
+    #while True: 
+    # Capture and save the image 
+    camera.capture_file(f'high_res_image{count}.jpg') 
+    count += 1 print("Image captured!") 
+    time.sleep(1) 
+    # Wait for 1 second before capturing the next image
 if __name__ == '__main__':
     try:
         print_ip_address()
