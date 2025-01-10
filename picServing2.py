@@ -55,6 +55,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             self.shutdown_system()
         elif self.path == '/capture':
             self.capture_images()
+            self.list_images()
         else:
             return super().do_GET()
 
@@ -172,12 +173,14 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         # Capture and save the image
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"image captured...")
+        self.wfile.write(b"image capture in progress...")
         print("capturing...") 
         camera.capture_file(f'high_res_image{count}.jpg') 
         count += random.randint(0, 100) 
         print("Image captured!") 
         time.sleep(1) 
+        self.wfile.write(b"image capture done")
+        self.list_images()
         # Wait for 1 second before capturing the next image
 
 def start_http_server():
