@@ -175,7 +175,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.wfile.write(b"image captured...")
         print("capturing...") 
         camera.capture_file(f'high_res_image{count}.jpg') 
-        count += 1 
+        count += 9 
         print("Image captured!") 
         time.sleep(1) 
         # Wait for 1 second before capturing the next image
