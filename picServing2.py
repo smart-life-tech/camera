@@ -76,7 +76,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         """)
 
         self.wfile.write(b"<br><h3>System Controls</h3>")
-        self.wfile.write(b'<a href="/reboot">Reboot</a> | <a href="/shutdown">Shutdown</a> | <a href="/capture">Shutdown</a>')
+        self.wfile.write(b'<a href="/reboot">Reboot</a> | <a href="/shutdown">Shutdown</a> | <a href="/capture">capture image</a>')
         self.wfile.write(b"</body></html>")
         
         self.wfile.write(b"<html><head><title>Images</title>")
@@ -164,6 +164,17 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.wfile.write(b"Shutting down system...")
         print("Shutting down system...")
         subprocess.run(['sudo', 'shutdown', 'now'])
+        
+    
+    def capture_images(): 
+        global count 
+        #while True: 
+        # Capture and save the image 
+        camera.capture_file(f'high_res_image{count}.jpg') 
+        count += 1 
+        print("Image captured!") 
+        time.sleep(1) 
+        # Wait for 1 second before capturing the next image
 
 def start_http_server():
     os.chdir(IMAGE_DIR)
