@@ -188,7 +188,8 @@ def capture_images():
     #while True: 
     # Capture and save the image 
     camera.capture_file(f'high_res_image{count}.jpg') 
-    count += 1 print("Image captured!") 
+    count += 1 
+    print("Image captured!") 
     time.sleep(1) 
     # Wait for 1 second before capturing the next image
 if __name__ == '__main__':
