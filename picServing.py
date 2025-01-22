@@ -187,6 +187,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
 #         httpd.serve_forever()
 # Start the server with custom handler
 def start_http_server():
+    print("Starting HTTP server...")
     os.chdir(IMAGE_DIR)  # Change directory to the image folder
     with TCPServer(("localhost", PORT), MyHTTPRequestHandler) as httpd:
         print(f"Serving images on portss {PORT}...")
@@ -208,6 +209,7 @@ def delete_image(image_path):
         print(f"Error deleting image: {e}")
 
 def serving():
+    print("waiting for  images to be received...")
     # Create a TCP/IP socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = ('localhost', 65432)
@@ -249,6 +251,7 @@ if __name__ == '__main__':
         server_thread.daemon = True  # Daemonize the thread so it stops on exit
         server_thread.start()
         server_thread.join()  # Make sure the server keeps running
-        time.sleep(100)  # Wait for the server to start
+        time.sleep(10)  # Wait for the server to start
+        serving()
     except KeyboardInterrupt:
         print("Server interrupted. Shutting down.")
