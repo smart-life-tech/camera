@@ -15,7 +15,7 @@ image_bytes = byte_arr.getvalue()
 
 # Create a TCP/IP socket
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_address = ('192.168.137.247', 65432)
+server_address = ('192.168.233.194', 65432)
 client_socket.connect(server_address)
 
 try:
