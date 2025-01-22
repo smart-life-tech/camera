@@ -246,12 +246,13 @@ def serving():
 if __name__ == '__main__':
     try:
         print_ip_address()
+        serving()
         # Start the HTTP server in a separate thread
         server_thread = threading.Thread(target=start_http_server)
         server_thread.daemon = True  # Daemonize the thread so it stops on exit
         server_thread.start()
         server_thread.join()  # Make sure the server keeps running
         time.sleep(10)  # Wait for the server to start
-        serving()
+        
     except KeyboardInterrupt:
         print("Server interrupted. Shutting down.")
