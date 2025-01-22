@@ -3,7 +3,7 @@ from PIL import Image
 import io
 
 # Load an image
-image_path = '/camera/Pictures/img1.jpg'
+image_path = '/home/user/camera/Pictures/img1.jpg'
 image = Image.open(image_path)
 # Convert image to RGB if it is in RGBA mode 
 if image.mode == 'RGBA': 
