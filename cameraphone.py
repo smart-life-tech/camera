@@ -9,7 +9,7 @@ camera.configure(camera.create_still_configuration(main={"size": camera.sensor_r
 # Start the camera 
 camera.start()
 # Define the server (Pi3rd) IP and port for communication
-PI3_IP = '192.168.233.194'  # Pi3's fixed IP address
+PI3_IP = 'localhost'  # Pi3's fixed IP address
 PORT = 5000
 
 def capture_image(filename):

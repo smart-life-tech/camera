@@ -5,6 +5,16 @@ from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
 import socket
 import subprocess
+from PIL import Image
+import io
+from picamera2 import Picamera2
+
+# Setup the camera
+camera = Picamera2()
+# Configure the camera with default settings 
+camera.configure(camera.create_still_configuration(main={"size": camera.sensor_resolution}))
+# Start the camera 
+camera.start()
 IMAGE_DIR = '/home/user/camera'  # Ensure this is the correct directory
 #IMAGE_DIR=input("Enter the directory path to the photos to be served: ")
 PORT = 8080
@@ -43,6 +53,8 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             self.reboot_system()
         elif self.path == '/shutdown':
             self.shutdown_system()
+        elif self.path == '/capture':
+            self.capture_image()
         else:
             # Serve the requested image file
             return super().do_GET()
@@ -67,8 +79,10 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
 
         self.wfile.write(b"<br><h3>System Controls</h3>")
         self.wfile.write(b'<a href="/reboot">Reboot</a> | <a href="/shutdown">Shutdown</a>')
+        self.wfile.write(b"<br><h3>Capture Image</h3>")
+        self.wfile.write(b'<a href="/capture">Capture Image</a>')
+        self.wfile.write(b"<br><h3>Images</h3>")
         self.wfile.write(b"</body></html>")
-        
         self.wfile.write(b"<html><head><title>Images</title>")
         self.wfile.write(b"<style>img { width: 150px; margin: 10px; } </style></head><body>")
         self.wfile.write(b"<h2>Captured Images</h2>")
@@ -157,6 +171,14 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.wfile.write(b"Shutting down system...")
         print("Shutting down system...")
         subprocess.run(['sudo', 'shutdown', 'now'])
+    
+    def capture_image(self):
+        # Capture an image using the PiCamera
+         # Capture and save the image 
+        filename = f"/home/user/camera/captured_image_{int(time.time())}.jpg"
+        camera.capture_file(filename)
+        self.wfile.write(b"caprure")
+        print("Image captured and saved.")
 
 # def start_http_server():
 #     os.chdir(IMAGE_DIR)
@@ -166,7 +188,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
 # Start the server with custom handler
 def start_http_server():
     os.chdir(IMAGE_DIR)  # Change directory to the image folder
-    with TCPServer(("192.168.233.194", PORT), MyHTTPRequestHandler) as httpd:
+    with TCPServer(("localhost", PORT), MyHTTPRequestHandler) as httpd:
         print(f"Serving images on portss {PORT}...")
         httpd.serve_forever()
 
@@ -185,6 +207,39 @@ def delete_image(image_path):
     except Exception as e:
         print(f"Error deleting image: {e}")
 
+def serving():
+    # Create a TCP/IP socket
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_address = ('localhost', 65432)
+    server_socket.bind(server_address)
+
+    # Listen for incoming connections
+    server_socket.listen(2)
+
+    print('Server is listening...')
+
+    while True:
+        connection, client_address = server_socket.accept()
+        try:
+            print('Connection from', client_address)
+            
+            # Receive the image data in chunks
+            image_data = b''
+            while True:
+                data = connection.recv(2048)
+                if not data:
+                    break
+                image_data += data
+            # Save the image to the current directory
+            image.save('received_image.png')
+            # Convert the byte data to an image
+            image = Image.open(io.BytesIO(image_data))
+            image.show()
+            
+            print('Image received and displayed.')
+            
+        finally:
+            connection.close()
 
 if __name__ == '__main__':
     try:

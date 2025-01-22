@@ -8,7 +8,7 @@ server_address = ('localhost', 65432)
 server_socket.bind(server_address)
 
 # Listen for incoming connections
-server_socket.listen(1)
+server_socket.listen(2)
 
 print('Server is listening...')
 
@@ -24,7 +24,8 @@ while True:
             if not data:
                 break
             image_data += data
-        
+        # Save the image to the current directory
+        image.save('received_image.png')
         # Convert the byte data to an image
         image = Image.open(io.BytesIO(image_data))
         image.show()
