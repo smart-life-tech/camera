@@ -14,7 +14,7 @@ image.save(byte_arr, format='JPEG')
 image_bytes = byte_arr.getvalue()
 
 # Resolve hostname to IP address
-hostname = 'hostname'
+hostname = 'raspberrypi'
 port = 65432
 server_address = (socket.gethostbyname(hostname), port)
 
