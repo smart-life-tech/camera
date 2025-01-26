@@ -3,7 +3,7 @@ from PIL import Image
 import io
 
 # Resolve hostname to IP address
-hostname = 'hostname'
+hostname = 'raspberrypi'
 port = 65432
 server_address = (socket.gethostbyname(hostname), port)
 
