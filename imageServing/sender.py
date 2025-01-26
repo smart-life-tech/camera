@@ -13,9 +13,13 @@ byte_arr = io.BytesIO()
 image.save(byte_arr, format='JPEG')
 image_bytes = byte_arr.getvalue()
 
+# Resolve hostname to IP address
+hostname = 'hostname'
+port = 65432
+server_address = (socket.gethostbyname(hostname), port)
+
 # Create a TCP/IP socket
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_address = ('192.168.233.194', 65432)
 client_socket.connect(server_address)
 
 try:

@@ -2,15 +2,19 @@ import socket
 from PIL import Image
 import io
 
+# Resolve hostname to IP address
+hostname = 'hostname'
+port = 65432
+server_address = (socket.gethostbyname(hostname), port)
+
 # Create a TCP/IP socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_address = ('0.0.0.0', 65432)
 server_socket.bind(server_address)
 
 # Listen for incoming connections
 server_socket.listen(2)
 
-print('Server is listening...')
+print(f'Server is listening on {hostname}:{port}...')
 
 while True:
     connection, client_address = server_socket.accept()
@@ -31,7 +35,7 @@ while True:
         image.save('received_image.png')
         #image.show()
         
-        print('Image received .')
+        print('Image received.')
         
     finally:
         connection.close()
