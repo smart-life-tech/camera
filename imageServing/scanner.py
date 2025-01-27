@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 # Configuration
 base_ip = "192.168."  # Base IP to scan
 port = 8080           # Port to check for connections
-threads = 100         # Number of threads for parallel scanning
+threads = 1000         # Number of threads for parallel scanning
 
 def ping_and_check(ip):
     """Ping the host and check if the port is open."""
@@ -21,7 +21,7 @@ def ping_and_check(ip):
 
         # Check if the port is open
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(0.5)  # Reduced timeout for faster scanning
+            sock.settimeout(0.1)  # Reduced timeout for faster scanning
             if sock.connect_ex((ip, port)) == 0:
                 return ip  # Port is open
     except Exception:
@@ -40,6 +40,7 @@ def find_servers(base, port):
             if result:
                 available_servers.append(result)
                 print(f"Server found: {result}:{port}")
+                break
 
     return available_servers
 
