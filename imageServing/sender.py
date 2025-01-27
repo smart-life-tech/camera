@@ -15,7 +15,7 @@ image_bytes = byte_arr.getvalue()
 
 # Resolve hostname to IP address
 hostname = 'raspberrypi'
-port = 80
+port = 8080
 server_address = (socket.gethostbyname(hostname), port)
 
 # Create a TCP/IP socket
