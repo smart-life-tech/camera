@@ -21,7 +21,7 @@ def ping_and_check(ip):
 
         # Check if the port is open
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(0.1)  # Reduced timeout for faster scanning
+            sock.settimeout(0.5)  # Reduced timeout for faster scanning
             if sock.connect_ex((ip, port)) == 0:
                 return ip  # Port is open
     except Exception:
