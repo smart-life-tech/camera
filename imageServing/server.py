@@ -6,7 +6,7 @@ import io
 hostname = 'raspberrypi'
 port = 8080
 server_address = (socket.gethostbyname(hostname), port)
-
+server_address = ('0.0.0.0', port)
 # Create a TCP/IP socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(server_address)
