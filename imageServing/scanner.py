@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 # Configuration
 base_ip = "192.168."  # Base IP to scan
 port = 8080           # Port to check for connections
-threads = 1000         # Number of threads for parallel scanning
+threads = 200         # Number of threads for parallel scanning
 
 def ping_and_check(ip):
     """Ping the host and check if the port is open."""
