@@ -8,6 +8,11 @@ import subprocess
 import requests
 import random
 from picamera2 import Picamera2
+import RPi.GPIO as GPIO
+# Setup the camera
+TRIGGER_PIN = 17  # You can use any GPIO pin
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(TRIGGER_PIN, GPIO.OUT)
 # Get the local IP address of the Raspberry Pi
 hostname = socket.gethostname()
 current_ip = socket.gethostbyname(hostname)
@@ -101,6 +106,10 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             self.shutdown_system()
         elif self.path == '/capture':
             self.capture_images()
+            GPIO.output(TRIGGER_PIN, GPIO.HIGH)
+            time.sleep(1)  # Keep the pin HIGH for 1 second
+            GPIO.output(TRIGGER_PIN, GPIO.LOW)
+            time.sleep(1)  
             #self.list_images()
         else:
             return super().do_GET()

@@ -2,6 +2,10 @@ import time
 from picamera2 import Picamera2
 import socket
 import os
+import RPi.GPIO as GPIO
+INPUT_PIN = 17  # Same pin as used for the trigger
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(INPUT_PIN, GPIO.IN)
 # Setup the camera
 camera = Picamera2()
 # Configure the camera with default settings 
@@ -35,7 +39,7 @@ def wait_for_trigger():
         s.connect((PI3_IP, PORT))
         while True:
             data = s.recv(1024)
-            if data.decode('utf-8') == 'capture':
+            if data.decode('utf-8') == 'capture' or GPIO.input(INPUT_PIN) == GPIO.HIGH:
                 filename = f"/home/user/camera/captured_image_{int(time.time())}.jpg"
                 capture_image(filename)
                 send_image_to_pi3(filename)
