@@ -4,15 +4,15 @@ from concurrent.futures import ThreadPoolExecutor
 
 # Configuration
 base_ip = "192.168."  # Base IP to scan
-port = 8080           # Port to check for connections
-threads = 100         # Number of threads for parallel scanning
+port = 22            # Port to check for connections (SSH)
+threads = 100        # Number of threads for parallel scanning
 
 def ping_and_check(ip):
     """Ping the host and check if the port is open."""
     try:
         # Ping the host
         ping_result = subprocess.run(
-            ["ping", "-c", "1", "-W", "1", ip],  # On Windows, use ["ping", "-n", "1", ip]
+            ["ping", "-n", "1", ip],  # Corrected ping command for Windows
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
