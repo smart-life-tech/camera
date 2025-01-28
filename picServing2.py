@@ -5,9 +5,53 @@ from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
 import socket
 import subprocess
+import requests
 import random
 from picamera2 import Picamera2
+# Get the local IP address of the Raspberry Pi
+hostname = socket.gethostname()
+current_ip = socket.gethostbyname(hostname)
 
+file_path = 'C:\\Users\\USER\\Documents\\raspberrypi\\camera\\example.txt'
+def read_stored_ip(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            return file.read().strip()
+    return None
+
+# Function to write the new IP address to the file
+def write_ip_to_file(file_path, ip):
+    with open(file_path, 'w') as file:
+        file.write(ip)
+    while True:
+        try:
+            url = 'https://christlight.pythonanywhere.com/write'
+            data = {'content': ip}
+            response = requests.post(url, json=data)
+            print(response.json())
+            if response.status_code == 200:
+                print("IP address sent successfully.")
+                break
+        except requests.exceptions.RequestException as e:
+            print(f"Error: {e}")
+        time.sleep(10)
+
+# Read the stored IP address
+stored_ip = read_stored_ip(file_path)
+
+# Check if the IP address has changed
+if stored_ip != current_ip:
+    # Post the new IP address
+    # url = 'https://christlight.pythonanywhere.com/read'
+    # data = {'ip': current_ip}
+
+    # response = requests.post(url, json=data)
+    # print(response.json())
+
+    # Update the stored IP address
+    write_ip_to_file(file_path, current_ip)
+else:
+    print("IP address has not changed.")
 # Initialize the camera
 camera = Picamera2()
 
@@ -24,7 +68,7 @@ count = 0
 IMAGE_DIR = '/home/user/camera'  # Ensure this is the correct directory
 PORT = 8080
 WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
-os.system('sudo ip addr add 192.168.233.194/24 dev wlan0')
+# os.system('sudo ip addr add 192.168.233.194/24 dev wlan0')
 time.sleep(5)
 def get_ip_address():
     hostname = socket.gethostname()  # Get the hostname of the Pi

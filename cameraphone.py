@@ -1,7 +1,7 @@
 import time
 from picamera2 import Picamera2
 import socket
-
+import os
 # Setup the camera
 camera = Picamera2()
 # Configure the camera with default settings 
@@ -9,7 +9,14 @@ camera.configure(camera.create_still_configuration(main={"size": camera.sensor_r
 # Start the camera 
 camera.start()
 # Define the server (Pi3rd) IP and port for communication
-PI3_IP = 'localhost'  # Pi3's fixed IP address
+file_path = 'C:\\Users\\USER\\Documents\\raspberrypi\\camera\\example.txt'
+def read_stored_ip(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            return file.read().strip()
+    return None
+
+PI3_IP = read_stored_ip()  # Pi3's fixed IP address
 PORT = 5000
 
 def capture_image(filename):
