@@ -3,6 +3,26 @@ from picamera2 import Picamera2
 import socket
 import os
 import RPi.GPIO as GPIO
+import requests
+current_ip = None
+# Define the server (Pi3rd) IP and port for communication
+file_path = 'C:\\Users\\USER\\Documents\\raspberrypi\\camera\\example.txt'
+# Post the new IP address
+def checks():
+    global current_ip
+    while True:
+        try:
+            url = 'https://christlight.pythonanywhere.com/read'
+            response = requests.get(url)
+            print(response.json().get('content'))
+            current_ip = response.json().get('content')
+            write_ip_to_file(file_path,current_ip)
+            if response.status_code == 200:
+                print("IP address sent successfully.")
+                break
+        except Exception as e:
+            print(f"Error: {e}")
+            
 INPUT_PIN = 17  # Same pin as used for the trigger
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(INPUT_PIN, GPIO.IN)
@@ -12,14 +32,29 @@ camera = Picamera2()
 camera.configure(camera.create_still_configuration(main={"size": camera.sensor_resolution}))
 # Start the camera 
 camera.start()
-# Define the server (Pi3rd) IP and port for communication
-file_path = 'C:\\Users\\USER\\Documents\\raspberrypi\\camera\\example.txt'
+
+checks()
 def read_stored_ip(file_path):
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
             return file.read().strip()
     return None
 
+def write_ip_to_file(file_path, ip):
+    with open(file_path, 'w') as file:
+        file.write(ip)
+# Read the stored IP address
+stored_ip = read_stored_ip(file_path)
+
+# Check if the IP address has changed
+if stored_ip != current_ip:
+    
+    # Update the stored IP address
+    write_ip_to_file(file_path, current_ip)
+else:
+    print("IP address has not changed.")
+    
+    
 PI3_IP = read_stored_ip()  # Pi3's fixed IP address
 PORT = 5000
 
