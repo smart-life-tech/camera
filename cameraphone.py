@@ -73,7 +73,7 @@ def send_image_to_pi3(image_path):
             print("connected to pi3")
             with open(image_path, 'rb') as f:
                     while True:
-                        chunk = f.read(1024)
+                        chunk = f.read(2048)
                         if not chunk:
                             break
                         s.sendall(chunk)  # Send image file to Pi3

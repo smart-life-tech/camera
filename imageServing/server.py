@@ -65,6 +65,7 @@ while True:
         #image.show()
         
         print('Image received.')
-        
+    except Exception as e:
+        print(f"Error: {e}")
     finally:
         connection.close()
