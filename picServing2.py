@@ -11,7 +11,7 @@ import random
 from picamera2 import Picamera2
 import RPi.GPIO as GPIO
 # Setup the camera
-TRIGGER_PIN = 17  # You can use any GPIO pin
+TRIGGER_PIN = 27  
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(TRIGGER_PIN, GPIO.OUT)
 # Get the local IP address of the Raspberry Pi
@@ -249,7 +249,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         print("Image captured!") 
         time.sleep(1) 
         self.wfile.write(b"image capture done \n")
-        self.wfile.write(b'<a href="/refresh">back home</a>')
+        #self.wfile.write(b'<a href="/refresh">back home</a>')
         # Wait for 1 second before capturing the next image
 class ThreadedTCPServer(ThreadingMixIn, TCPServer):
     pass

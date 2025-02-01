@@ -70,17 +70,15 @@ def send_image_to_pi3(image_path):
         with open(image_path, 'rb') as f:
             s.sendfile(f)  # Send image file to Pi3
         print(f"Image {image_path} sent to Pi3.")
+        s.close()
 
 def wait_for_trigger():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((PI3_IP, PORT))
-        while True:
-            data = s.recv(1024)
-            if data.decode('utf-8') == 'capture' or GPIO.input(INPUT_PIN) == GPIO.HIGH:
-                filename = f"/home/user/camera/captured_image_{int(time.time())}.jpg"
-                capture_image(filename)
-                send_image_to_pi3(filename)
-                break
+    while True:
+        if  GPIO.input(INPUT_PIN) == GPIO.HIGH:
+            filename = f"/home/user/camera/captured_image_{int(time.time())}.jpg"
+            capture_image(filename)
+            send_image_to_pi3(filename)
+            break
 
 if __name__ == '__main__':
     wait_for_trigger()
