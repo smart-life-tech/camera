@@ -66,13 +66,22 @@ def capture_image(filename):
     camera.capture_file(filename)
 
 def send_image_to_pi3(image_path):
-    print("sending image to pi3")
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((PI3_IP, PORT))
-        with open(image_path, 'rb') as f:
-            s.sendfile(f)  # Send image file to Pi3
-        print(f"Image {image_path} sent to Pi3.")
-        s.close()
+    try:
+        print("sending image to pi3")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((PI3_IP, PORT))
+            print("connected to pi3")
+            with open(image_path, 'rb') as f:
+                    while True:
+                        chunk = f.read(1024)
+                        if not chunk:
+                            break
+                        s.sendall(chunk)  # Send image file to Pi3
+                    print("Image file sent.")
+    except BrokenPipeError:
+        print("Connection closed by the receiver before sending was complete.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 def wait_for_trigger():
     while True:

@@ -118,11 +118,11 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         elif self.path == '/shutdown':
             self.shutdown_system()
         elif self.path == '/capture':
-            self.capture_images()
             GPIO.output(TRIGGER_PIN, GPIO.HIGH)
-            time.sleep(1)  # Keep the pin HIGH for 1 second
+            time.sleep(0.5)  # Keep the pin HIGH for 1 second
             GPIO.output(TRIGGER_PIN, GPIO.LOW)
-            time.sleep(1)  
+            self.capture_images()
+              
             #self.list_images()
         else:
             return super().do_GET()
