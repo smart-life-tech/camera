@@ -8,6 +8,10 @@ current_ip = None
 # Define the server (Pi3rd) IP and port for communication
 file_path = 'C:\\Users\\USER\\Documents\\raspberrypi\\camera\\example.txt'
 # Post the new IP address
+
+def write_ip_to_file(file_path, ip):
+    with open(file_path, 'w') as file:
+        file.write(ip)
 def checks():
     global current_ip
     while True:
@@ -40,9 +44,6 @@ def read_stored_ip(file_path):
             return file.read().strip()
     return None
 
-def write_ip_to_file(file_path, ip):
-    with open(file_path, 'w') as file:
-        file.write(ip)
 # Read the stored IP address
 stored_ip = read_stored_ip(file_path)
 
