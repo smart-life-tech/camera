@@ -69,7 +69,7 @@ def send_image_to_pi3(image_path):
     try:
         print("sending image to pi3")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((PI3_IP, PORT))
+            s.connect((PI3_IP, 8080))
             print("connected to pi3")
             with open(image_path, 'rb') as f:
                     while True:

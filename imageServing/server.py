@@ -15,7 +15,7 @@ def get_ip_address(interface):
 wlan0_ip = get_ip_address('wlan0')
 # Resolve hostname to IP address
 hostname = 'raspberrypi'
-port = 5000
+port = 8080
 server_address = (socket.gethostbyname(hostname), port)
 server_address = (wlan0_ip, port)
 # Create a TCP/IP socket
