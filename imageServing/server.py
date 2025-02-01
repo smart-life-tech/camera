@@ -25,7 +25,7 @@ server_socket.bind(server_address)
 # Listen for incoming connections
 server_socket.listen(2)
 
-print(f'Server is listening on {hostname}:{port}...')
+print(f'Server is listening on {wlan0_ip}:{port}...')
 
 while True:
     connection, client_address = server_socket.accept()
