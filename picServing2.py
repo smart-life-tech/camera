@@ -2,6 +2,7 @@ import time
 import os
 import threading
 from http.server import SimpleHTTPRequestHandler
+from socketserver import ThreadingMixIn, TCPServer
 from socketserver import TCPServer
 import socket
 import subprocess
@@ -250,10 +251,12 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.wfile.write(b"image capture done \n")
         self.wfile.write(b'<a href="/refresh">back home</a>')
         # Wait for 1 second before capturing the next image
-
+class ThreadedTCPServer(ThreadingMixIn, TCPServer):
+    pass
 def start_http_server():
     os.chdir(IMAGE_DIR)
-    with TCPServer((current_ip, PORT), MyHTTPRequestHandler) as httpd:
+    server_address = (current_ip, PORT)
+    with ThreadedTCPServer(server_address, MyHTTPRequestHandler) as httpd:
         print(f"Serving images on port {PORT}...")
         httpd.serve_forever()
 
