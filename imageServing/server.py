@@ -1,12 +1,23 @@
 import socket
 from PIL import Image
 import io
+import subprocess
+def get_ip_address(interface):
+    try:
+        result = subprocess.check_output(f'ip addr show {interface}', shell=True).decode('utf-8')
+        for line in result.split('\n'):
+            if 'inet ' in line:
+                return line.split()[1].split('/')[0]
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting IP address for interface {interface}: {e}")
+        return None
 
+wlan0_ip = get_ip_address('wlan0')
 # Resolve hostname to IP address
 hostname = 'raspberrypi'
 port = 8080
 server_address = (socket.gethostbyname(hostname), port)
-server_address = ('0.0.0.0', port)
+server_address = (wlan0_ip, port)
 # Create a TCP/IP socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(server_address)
