@@ -61,10 +61,12 @@ PI3_IP = read_stored_ip(file_path)  # Pi3's fixed IP address
 PORT = 5000
 print("pi 3 ip address is: ", PI3_IP)
 def capture_image(filename):
+    print("capturing image")
     # Capture and save the image 
     camera.capture_file(filename)
 
 def send_image_to_pi3(image_path):
+    print("sending image to pi3")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((PI3_IP, PORT))
         with open(image_path, 'rb') as f:
