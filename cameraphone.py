@@ -7,6 +7,7 @@ import requests
 current_ip = None
 # Define the server (Pi3rd) IP and port for communication
 file_path = 'C:\\Users\\USER\\Documents\\raspberrypi\\camera\\example.txt'
+file_path = '/home/user/camera/example.txt'
 # Post the new IP address
 
 def write_ip_to_file(file_path, ip):
@@ -56,7 +57,7 @@ else:
     print("IP address has not changed.")
     
     
-PI3_IP = read_stored_ip()  # Pi3's fixed IP address
+PI3_IP = read_stored_ip(file_path)  # Pi3's fixed IP address
 PORT = 5000
 
 def capture_image(filename):
