@@ -59,7 +59,7 @@ else:
     
 PI3_IP = read_stored_ip(file_path)  # Pi3's fixed IP address
 PORT = 5000
-
+print("pi 3 ip address is: ", PI3_IP)
 def capture_image(filename):
     # Capture and save the image 
     camera.capture_file(filename)

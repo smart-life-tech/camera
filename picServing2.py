@@ -83,7 +83,7 @@ time.sleep(2)
 count = 0
 
 IMAGE_DIR = '/home/user/camera'  # Ensure this is the correct directory
-PORT = 8080
+PORT = 5000
 WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
 # os.system('sudo ip addr add 192.168.233.194/24 dev wlan0')
 time.sleep(5)
