@@ -276,18 +276,32 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.wfile.write(b"Shutting down system...")
         print("Shutting down system...")
         subprocess.run(['sudo', 'shutdown', 'now'])
-        
+    def get_number(self):
+        set_number_file = os.path.join(IMAGE_DIR, 'set_number.txt')
+        with open(set_number_file, 'r+') as f:
+            set_number = int(f.read().strip())
+        return set_number
+     
     
     def capture_images(self): 
         global count 
         #while True: 
-        # Capture and save the image
+        # Capture and save the 
+        set_number_file = os.path.join(IMAGE_DIR, 'set_number.txt')
+        with open(set_number_file, 'r+') as f:
+            set_number = int(f.read().strip())
+            f.seek(0)
+            f.truncate()
+            f.write(str(set_number + 1))
+            
+        
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b"image capture in progress... \n")
         print("capturing...") 
-        camera.capture_file(f'high_res_image{count}.jpg') 
-        count += random.randint(0, 100) 
+        filename = os.path.join(IMAGE_DIR, f'{self.get_number()}z.jpg')
+        camera.capture_file(filename) 
+        count =count + 1
         print("Image captured!") 
         time.sleep(1) 
         self.wfile.write(b"image capture done \n")

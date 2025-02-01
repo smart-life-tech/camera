@@ -2,6 +2,8 @@ import socket
 from PIL import Image
 import io
 import subprocess
+import os
+IMAGE_DIR = '/home/user/camera'  # Ensure this is the correct directory
 def get_ip_address(interface):
     try:
         result = subprocess.check_output(f'ip addr show {interface}', shell=True).decode('utf-8')
@@ -24,14 +26,26 @@ server_socket.bind(server_address)
 
 # Listen for incoming connections
 server_socket.listen(2)
-
+count =1
 print(f'Server is listening on {wlan0_ip}:{port}...')
-
+old_address = None
+def get_number():
+    set_number_file = os.path.join(IMAGE_DIR, 'set_number.txt')
+    with open(set_number_file, 'r+') as f:
+        set_number = int(f.read().strip())
+    return set_number
 while True:
     connection, client_address = server_socket.accept()
     try:
         print('Connection from', client_address)
-        
+        if old_address is not None and old_address != client_address:
+            print('Client changed. Closing connection.')
+            filename = os.path.join(IMAGE_DIR, f'{get_number()}x.jpg')
+            count=count+1
+        else:
+            #count=count+1
+            filename = os.path.join(IMAGE_DIR, f'{get_number()}y.jpg')
+            continue
         # Receive the image data in chunks
         image_data = b''
         while True:
@@ -43,7 +57,10 @@ while True:
         # Convert the byte data to an image
         image = Image.open(io.BytesIO(image_data))
         # Save the image to the current directory
-        image.save('received_image.png')
+        
+        image.save(filename)
+        if (count>=2):
+            count=1
         #image.show()
         
         print('Image received.')
