@@ -66,7 +66,7 @@ if stored_ip != current_ip:
     # Post the new IP address
     # url = 'https://christlight.pythonanywhere.com/read'
     # data = {'ip': current_ip}
-
+    #/home/user/camera/set_number.txt
     # response = requests.post(url, json=data)
     # print(response.json())
 
@@ -293,6 +293,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             f.seek(0)
             f.truncate()
             f.write(str(set_number + 1))
+            f.close()
             
         
         self.send_response(200)

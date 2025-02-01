@@ -33,6 +33,7 @@ def get_number():
     set_number_file = os.path.join(IMAGE_DIR, 'set_number.txt')
     with open(set_number_file, 'r+') as f:
         set_number = int(f.read().strip())
+    f.close()
     return set_number
 while True:
     connection, client_address = server_socket.accept()
