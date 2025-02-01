@@ -46,7 +46,7 @@ while True:
         else:
             #count=count+1
             filename = os.path.join(IMAGE_DIR, f'{get_number()}y.jpg')
-            continue
+        print(filename)
         # Receive the image data in chunks
         image_data = b''
         while True:
