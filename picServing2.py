@@ -29,7 +29,7 @@ def get_ip_address(interface):
 wlan0_ip = get_ip_address('wlan0')
 print(current_ip,wlan0_ip)
 current_ip = wlan0_ip
-file_path = 'C:\\Users\\USER\\Documents\\raspberrypi\\camera\\example.txt'
+file_path = '/home/user/camera/example.txt'
 def read_stored_ip(file_path):
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
