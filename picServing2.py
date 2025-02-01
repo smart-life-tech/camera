@@ -16,7 +16,19 @@ GPIO.setup(TRIGGER_PIN, GPIO.OUT)
 # Get the local IP address of the Raspberry Pi
 hostname = socket.gethostname()
 current_ip = socket.gethostbyname(hostname)
+def get_ip_address(interface):
+    try:
+        result = subprocess.check_output(f'ip addr show {interface}', shell=True).decode('utf-8')
+        for line in result.split('\n'):
+            if 'inet ' in line:
+                return line.split()[1].split('/')[0]
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting IP address for interface {interface}: {e}")
+        return None
 
+wlan0_ip = get_ip_address('wlan0')
+print(current_ip,wlan0_ip)
+current_ip = wlan0_ip
 file_path = 'C:\\Users\\USER\\Documents\\raspberrypi\\camera\\example.txt'
 def read_stored_ip(file_path):
     if os.path.exists(file_path):

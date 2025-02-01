@@ -18,11 +18,11 @@ def checks():
         try:
             url = 'https://christlight.pythonanywhere.com/read'
             response = requests.get(url)
-            print(response.json().get('content'))
+            print("read content", response.json().get('content'))
             current_ip = response.json().get('content')
             write_ip_to_file(file_path,current_ip)
             if response.status_code == 200:
-                print("IP address sent successfully.")
+                print("IP address read successfully.")
                 break
         except Exception as e:
             print(f"Error: {e}")
