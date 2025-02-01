@@ -78,6 +78,7 @@ def send_image_to_pi3(image_path):
                             break
                         s.sendall(chunk)  # Send image file to Pi3
                     print("Image file sent.")
+                    os.remove(image_path)
     except BrokenPipeError:
         print("Connection closed by the receiver before sending was complete.")
     except Exception as e:

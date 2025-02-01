@@ -7,9 +7,6 @@ from socketserver import TCPServer
 import socket
 import subprocess
 import requests
-import random
-import cgi
-import io
 from PIL import Image
 
 from picamera2 import Picamera2
@@ -129,44 +126,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         else:
             return super().do_GET()
             #self.list_images()
-    def do_POST(self):
-        # Parse the form data posted
-        form = cgi.FieldStorage(
-            fp=self.rfile,
-            headers=self.headers,
-            environ={'REQUEST_METHOD': 'POST'}
-        )
 
-        # Check if the POST request contains a file
-        if "file" in form:
-            file_item = form["file"]
-
-            # Check if the file is uploaded
-            if file_item.filename:
-                # Read the file data
-                file_data = file_item.file.read()
-                
-                # Convert the byte data to an image
-                image = Image.open(io.BytesIO(file_data))
-                
-                # Save the image
-                image_path = os.path.join(IMAGE_DIR, file_item.filename)
-                image.save(image_path)
-                
-                # Respond to the client
-                self.send_response(200)
-                self.end_headers()
-                response_message = f"Image '{file_item.filename}' received and saved."
-                self.wfile.write(response_message.encode('utf-8'))
-                print(response_message)
-            else:
-                self.send_response(400)
-                self.end_headers()
-                self.wfile.write(b"No file uploaded.")
-        else:
-            self.send_response(400)
-            self.end_headers()
-            self.wfile.write(b"No file field found in the POST request.")
         
 
     def list_images(self):
