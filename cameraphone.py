@@ -28,7 +28,7 @@ def checks():
         except Exception as e:
             print(f"Error: {e}")
             
-INPUT_PIN = 17  # Same pin as used for the trigger
+INPUT_PIN = 27  # Same pin as used for the trigger
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(INPUT_PIN, GPIO.IN)
 # Setup the camera
