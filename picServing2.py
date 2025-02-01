@@ -253,7 +253,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
 
 def start_http_server():
     os.chdir(IMAGE_DIR)
-    with TCPServer(("localhost", PORT), MyHTTPRequestHandler) as httpd:
+    with TCPServer((current_ip, PORT), MyHTTPRequestHandler) as httpd:
         print(f"Serving images on port {PORT}...")
         httpd.serve_forever()
 
