@@ -263,7 +263,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         filename = os.path.join(IMAGE_DIR, f'{self.get_number()}z.jpg')
         camera.capture_file(filename) 
         count =count + 1
-        print("Image captured!") 
+        print("Image captured!",self.get_number()) 
         time.sleep(1) 
         self.wfile.write(b"image capture done \n")
         #self.wfile.write(b'<a href="/refresh">back home</a>')
