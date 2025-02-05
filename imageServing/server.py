@@ -46,6 +46,7 @@ while True:
             old_address=client_address
         else:
             #count=count+1
+            print("count continued",count)
             filename = os.path.join(IMAGE_DIR, f'{get_number()}y.jpg')
         print(filename)
         # Receive the image data in chunks
