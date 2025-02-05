@@ -34,20 +34,27 @@ def get_number():
     with open(set_number_file, 'r+') as f:
         set_number = int(f.read().strip())
     f.close()
-    return set_number
+    return 
+toggle = True
 while True:
     connection, client_address = server_socket.accept()
     try:
         print('Connection from', client_address)
         if old_address != client_address:
             print('Client changed. Closing connection.')
-            filename = os.path.join(IMAGE_DIR, f'{get_number()}x.jpg')
+            if toggle:
+                toggle = False
+                filename = os.path.join(IMAGE_DIR, f'{get_number()}x.jpg')
+            else:
+                toggle = True
+                filename = os.path.join(IMAGE_DIR, f'{get_number()}y.jpg')
+            
             count=count+1
             old_address=client_address
         else:
             #count=count+1
             print("count continued",count)
-            filename = os.path.join(IMAGE_DIR, f'{get_number()}y.jpg')
+            
         print(filename)
         # Receive the image data in chunks
         image_data = b''
