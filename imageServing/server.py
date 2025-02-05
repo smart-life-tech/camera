@@ -34,7 +34,7 @@ def get_number():
     with open(set_number_file, 'r+') as f:
         set_number = int(f.read().strip())
     f.close()
-    return 
+    return set_number
 toggle = True
 while True:
     connection, client_address = server_socket.accept()
