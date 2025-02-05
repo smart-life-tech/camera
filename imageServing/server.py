@@ -39,10 +39,11 @@ while True:
     connection, client_address = server_socket.accept()
     try:
         print('Connection from', client_address)
-        if old_address is not None and old_address != client_address:
+        if old_address != client_address:
             print('Client changed. Closing connection.')
             filename = os.path.join(IMAGE_DIR, f'{get_number()}x.jpg')
             count=count+1
+            old_address=client_address
         else:
             #count=count+1
             filename = os.path.join(IMAGE_DIR, f'{get_number()}y.jpg')
