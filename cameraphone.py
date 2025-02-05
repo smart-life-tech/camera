@@ -90,7 +90,7 @@ def wait_for_trigger():
             filename = f"/home/user/camera/captured_image_{int(time.time())}.jpg"
             capture_image(filename)
             send_image_to_pi3(filename)
-            break
+            #break
 
 if __name__ == '__main__':
     wait_for_trigger()
