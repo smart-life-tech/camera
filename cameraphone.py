@@ -86,11 +86,13 @@ def send_image_to_pi3(image_path):
 
 def wait_for_trigger():
     while True:
-        if  GPIO.input(INPUT_PIN) == GPIO.HIGH:
-            filename = f"/home/user/camera/captured_image_{int(time.time())}.jpg"
-            capture_image(filename)
-            send_image_to_pi3(filename)
-            #break
+        try:
+            if  GPIO.input(INPUT_PIN) == GPIO.HIGH:
+                filename = f"/home/user/camera/captured_image_{int(time.time())}.jpg"
+                capture_image(filename)
+                send_image_to_pi3(filename)
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
 if __name__ == '__main__':
     wait_for_trigger()
