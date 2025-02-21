@@ -86,6 +86,8 @@ def send_image_to_pi3(image_path):
         print(f"An error occurred: {e}")
 
 def wait_for_trigger():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(INPUT_PIN, GPIO.IN)
     while True:
         try:
             if  GPIO.input(INPUT_PIN) == GPIO.HIGH:
