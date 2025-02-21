@@ -86,16 +86,18 @@ def send_image_to_pi3(image_path):
         print(f"An error occurred: {e}")
 
 def wait_for_trigger():
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(INPUT_PIN, GPIO.IN)
+    
     while True:
         try:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(INPUT_PIN, GPIO.IN)
             if  GPIO.input(INPUT_PIN) == GPIO.HIGH:
                 filename = f"/home/user/camera/captured_image_{int(time.time())}.jpg"
                 capture_image(filename)
                 send_image_to_pi3(filename)
         except Exception as e:
             print(f"An error occurred: {e}")
+            time.sleep(5)
         finally:
             # Cleanup GPIO
             GPIO.cleanup()
