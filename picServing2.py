@@ -127,7 +127,13 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             return super().do_GET()
             #self.list_images()
 
-        
+    def do_POST(self):
+        if self.path == '/update_wifi':
+            self.update_wifi_credentials()
+        else:
+            self.send_response(501)
+            self.end_headers()
+            self.wfile.write(b"Unsupported method ('POST')")
 
     def list_images(self):
         images = [f for f in os.listdir(IMAGE_DIR) if f.endswith('.jpg')]
