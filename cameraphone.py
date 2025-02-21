@@ -29,8 +29,9 @@ def checks():
             print(f"Error: {e}")
             
 INPUT_PIN = 27  # Same pin as used for the trigger
-GPIO.setmode(GPIO.BCM)
 GPIO.cleanup()
+GPIO.setmode(GPIO.BCM)
+
 GPIO.setup(INPUT_PIN, GPIO.IN)
 # Setup the camera
 camera = Picamera2()
