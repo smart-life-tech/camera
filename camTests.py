@@ -3,9 +3,14 @@ import time
 
 # Initialize the camera
 camera = Picamera2()
-
+config = camera.create_still_configuration(main={"size": camera.sensor_resolution}, controls={
+    "ExposureTime": 10000,  # Adjust this value as needed
+    "AnalogueGain": 1.0,    # Adjust this value as needed
+    "AwbEnable": True       # Enable auto white balance
+})
+camera.configure(config)
 # Configure the camera with default settings
-camera.configure(camera.create_still_configuration(main={"size": camera.sensor_resolution}))
+#camera.configure(camera.create_still_configuration(main={"size": camera.sensor_resolution}))
 
 # Start the camera
 camera.start()
