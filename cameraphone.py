@@ -29,10 +29,7 @@ def checks():
             print(f"Error: {e}")
             
 INPUT_PIN = 27  # Same pin as used for the trigger
-GPIO.cleanup()
-GPIO.setmode(GPIO.BCM)
 
-GPIO.setup(INPUT_PIN, GPIO.IN)
 # Setup the camera
 camera = Picamera2()
 # Configure the camera with default settings 
@@ -89,6 +86,9 @@ def send_image_to_pi3(image_path):
 def wait_for_trigger():
     while True:
         try:
+            #GPIO.cleanup()
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(INPUT_PIN, GPIO.IN)
             if  GPIO.input(INPUT_PIN) == GPIO.HIGH:
                 filename = f"/home/user/camera/captured_image_{int(time.time())}.jpg"
                 capture_image(filename)
