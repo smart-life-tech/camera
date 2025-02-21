@@ -93,6 +93,9 @@ def wait_for_trigger():
                 send_image_to_pi3(filename)
         except Exception as e:
             print(f"An error occurred: {e}")
+        finally:
+            # Cleanup GPIO
+            GPIO.cleanup()
 
 if __name__ == '__main__':
     wait_for_trigger()

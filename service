@@ -1,0 +1,15 @@
+[Unit]
+Description=Camera Image Capturing Service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/user/camera/server.py
+WorkingDirectory=/home/user/camera
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=user  # Replace with your username
+Group=user  # Replace with your group
+
+[Install]
+WantedBy=multi-user.target
