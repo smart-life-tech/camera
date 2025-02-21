@@ -30,6 +30,7 @@ def checks():
             
 INPUT_PIN = 27  # Same pin as used for the trigger
 GPIO.setmode(GPIO.BCM)
+GPIO.cleanup()
 GPIO.setup(INPUT_PIN, GPIO.IN)
 # Setup the camera
 camera = Picamera2()
