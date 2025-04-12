@@ -42,18 +42,27 @@ def read_stored_ip(file_path):
 def write_ip_to_file(file_path, ip):
     with open(file_path, 'w') as file:
         file.write(ip)
-    while True:
+    
+    # Set a maximum number of retries
+    max_retries = 3
+    retry_count = 0
+    
+    while retry_count < max_retries:
         try:
             url = 'https://christlight.pythonanywhere.com/write'
             data = {'content': ip}
-            response = requests.post(url, json=data)
+            response = requests.post(url, json=data, timeout=10)  # Add 10-second timeout
             print(response.json())
             if response.status_code == 200:
                 print("IP address sent successfully.")
                 break
         except requests.exceptions.RequestException as e:
             print(f"Error: {e}")
-        time.sleep(10)
+            retry_count += 1
+            if retry_count >= max_retries:
+                print("Maximum retries reached. Continuing without sending IP.")
+                break
+        time.sleep(5)  # Reduced from 10 to 5 seconds
 
 # Read the stored IP address
 stored_ip = read_stored_ip(file_path)
@@ -956,7 +965,12 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                         return;
                     }
                     
-                    // Send to local server for immediate use
+                    // Show loading indicator
+                    const submitBtn = event.target.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
+                    submitBtn.disabled = true;
+                    
                     fetch('/update_wifi', {
                         method: 'POST',
                         headers: {
@@ -965,34 +979,24 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                         body: `ssid=${encodeURIComponent(ssid)}&password=${encodeURIComponent(password)}`
                     })
                     .then(response => {
+                        // Reset button state
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                        
                         if (response.ok) {
-                            // Now send to PythonAnywhere for storage
-                            return fetch('https://christlight.pythonanywhere.com/wifi/save', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                    ssid: ssid,
-                                    password: password
-                                })
-                            });
-                        } else {
-                            throw new Error('Failed to update local WiFi settings');
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('WiFi credentials updated successfully both locally and in the cloud.');
+                            alert('WiFi credentials updated successfully locally. You may need to reboot for changes to take effect.');
                             document.querySelector('#wifiModal .btn-close').click();
                         } else {
-                            alert('Cloud storage update failed: ' + data.message);
+                            alert('Failed to update WiFi settings.');
                         }
                     })
                     .catch(error => {
+                        // Reset button state
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                        
                         console.error('Error:', error);
-                        alert('updated WiFi credentials. ');
+                        alert('Error updating WiFi credentials.');
                     });
                 }
                 
@@ -1126,26 +1130,39 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                     'priority': 10,
                     'append': True
                 }
-                url = 'https://christlight.pythonanywhere.com/wifi'
-                #data = {'content': ip}
-                response = requests.post(url, json=data)
-                print(response.json())    
+                # url = 'https://christlight.pythonanywhere.com/wifi'
+                # #data = {'content': ip}
+                # response = requests.post(url, json=data)
+                # print(response.json())    
                 # Send to PythonAnywhere
-                response = requests.post(
-                    'https://christlight.pythonanywhere.com/wifi/',
-                    json=data,
-                    headers={'Content-Type': 'application/json'},
-                    timeout=10  # Set a timeout to avoid hanging
-                )
-                print(response)    
-                if response.status_code == 200:
-                    print(f"WiFi credentials for '{ssid}' saved   successfully")
-                else:
-                    print(f"Failed to save WiFi credentials  {response.text}")
-                
+                try:
+                    url = 'https://christlight.pythonanywhere.com/wifi/'  # Make sure this is the correct endpoint
+                    response = requests.post(
+                        url,
+                        json=data,
+                        headers={'Content-Type': 'application/json'},
+                        timeout=10
+                    )
+                    
+                    if response.status_code == 200:
+                        print(f"WiFi credentials for '{ssid}' saved successfully to cloud")
+                    else:
+                        print(f"Failed to save WiFi credentials to cloud: {response.status_code} - {response.text}")
+                        # Continue even if cloud update fails
+                except Exception as e:
+                    print(f"Error sending WiFi credentials to cloud: {e}")
+                    # Continue even if cloud update fails
+            
             except Exception as e:
                 print(f"Error sending WiFi credentials : {e}")
                 # Continue even if PythonAnywhere update fails
+            
+            print(f"WiFi network '{ssid}' added locally.")
+            try:
+                # Cloud update code here...
+                pass
+            except Exception as e:
+                print(f"Cloud update failed but local update succeeded: {e}")
             
             self.send_response(200)
             self.end_headers()
