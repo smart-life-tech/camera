@@ -1134,7 +1134,7 @@ update_config=1
                     headers={'Content-Type': 'application/json'},
                     timeout=10  # Set a timeout to avoid hanging
                 )
-            
+                print(response)    
                 if response.status_code == 200:
                     print(f"WiFi credentials for '{ssid}' saved   successfully")
                 else:
