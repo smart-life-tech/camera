@@ -1071,7 +1071,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             return
 
         try:
-            def update_wpa_supplicant(ssid, password):
+            if 1:
                 try:
                     # Check if the current configuration already has these credentials
                     current_config = ""
@@ -1087,10 +1087,10 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                     # If this is a new file, create the header
                     if not current_config or current_config.strip() == "":
                         new_config = f"""country=US
-ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-update_config=1
+                            ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+                            update_config=1
 
-"""
+                            """
                     else:
                         # Keep the existing config
                         new_config = current_config
@@ -1101,11 +1101,11 @@ update_config=1
                     
                     # Append the new network configuration
                     new_config += f"""network={{
-    ssid="{ssid}"
-    psk="{password}"
-    priority=10
-}}
-"""
+                        ssid="{ssid}"
+                        psk="{password}"
+                        priority=10
+                    }}
+                    """
                     
                     # Write to a temporary file first (since we might need sudo)
                     temp_file = '/tmp/wpa_supplicant.conf'

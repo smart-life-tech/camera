@@ -7,7 +7,8 @@ import datetime
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 app.config['CORS_HEADERS'] = 'Content-Type'
-
+# Enable CORS for all routes
+CORS(app, resources={r"/*": {"origins": "*"}})
 # Data file paths
 DATA_FILE = 'json.txt'
 METRICS_FILE = 'metrics_data.json'
