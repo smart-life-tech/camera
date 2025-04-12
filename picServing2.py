@@ -1140,8 +1140,6 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                     response = requests.post(
                         url,
                         json=data,
-                        headers={'Content-Type': 'application/json'},
-                        timeout=10
                     )
                     
                     if response.status_code == 200:
