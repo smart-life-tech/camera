@@ -93,9 +93,9 @@ def update_wpa_supplicant(ssid, password):
         
         print(f"Updated WiFi configuration for network: {ssid}")
         
-        # Restart the wireless interface to apply changes
-        subprocess.run(['sudo', 'systemctl', 'restart', 'wpa_supplicant'])
-        subprocess.run(['sudo', 'systemctl', 'restart', 'dhcpcd'])
+        # # Restart the wireless interface to apply changes
+        # subprocess.run(['sudo', 'systemctl', 'restart', 'wpa_supplicant'])
+        # subprocess.run(['sudo', 'systemctl', 'restart', 'dhcpcd'])
         
         # Wait for the network to reconnect
         print("Waiting for network to reconnect...")
