@@ -1107,7 +1107,6 @@ update_config=1
             new_config += f"""network={{
     ssid="{ssid}"
     psk="{password}"
-    priority=10
 }}
 """
         
