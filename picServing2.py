@@ -1133,7 +1133,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                 # print(response.json())    
                 # Send to PythonAnywhere
                 try:
-                    url = 'https://christlight.pythonanywhere.com/wifi/'  # Make sure this is the correct endpoint
+                    url = 'https://christlight.pythonanywhere.com/wifi'  # Make sure this is the correct endpoint
                     response = requests.post(
                         url,
                         json=data,
