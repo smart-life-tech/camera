@@ -39,7 +39,7 @@ def check_wifi_credentials():
         # Get the latest WiFi credentials from PythonAnywhere
         url = 'https://christlight.pythonanywhere.com/wifi/latest'
         response = requests.get(url)
-        
+        print("wifi credentials", response.json())
         if response.status_code == 200:
             data = response.json()
             if data.get('success'):
