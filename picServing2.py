@@ -1091,10 +1091,10 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             # If this is a new file, create the header
             if not current_config or current_config.strip() == "":
                 new_config = f"""country=US
-ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-update_config=1
+                    ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+                    update_config=1
 
-"""
+                    """
             else:
                 # Keep the existing config
                 new_config = current_config
@@ -1105,11 +1105,11 @@ update_config=1
         
             # Append the new network configuration
             new_config += f"""network={{
-    ssid="{ssid}"
-    psk="{password}"
-    priority=10
-}}
-"""
+                    ssid="{ssid}"
+                    psk="{password}"
+                    priority=10
+                }}
+                """
         
             # Write the updated configuration
             with open(WPA_SUPPLICANT_FILE, 'w') as f:
@@ -1126,10 +1126,13 @@ update_config=1
                     'priority': 10,
                     'append': True
                 }
-            
+                url = 'https://christlight.pythonanywhere.com/wifi'
+                #data = {'content': ip}
+                response = requests.post(url, json=data)
+                print(response.json())    
                 # Send to PythonAnywhere
                 response = requests.post(
-                    'https://christlight.pythonanywhere.com/wifi/save',
+                    'https://christlight.pythonanywhere.com/wifi/',
                     json=data,
                     headers={'Content-Type': 'application/json'},
                     timeout=10  # Set a timeout to avoid hanging
