@@ -1075,19 +1075,49 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             return
 
         try:
-            with open(WPA_SUPPLICANT_FILE, 'w') as f:
-                f.write(f"""country=US
-                ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-                update_config=1
+            # Read existing configuration
+            current_config = ""
+            if os.path.exists(WPA_SUPPLICANT_FILE):
+                with open(WPA_SUPPLICANT_FILE, 'r') as f:
+                    current_config = f.read()
+        
+            # Check if this network is already configured
+            if f'ssid="{ssid}"' in current_config:
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(f"WiFi network '{ssid}' is already configured.".encode())
+                return
+        
+            # If this is a new file, create the header
+            if not current_config or current_config.strip() == "":
+                new_config = f"""country=US
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
 
-                network={{
-                    ssid="{ssid}"
-                    psk="{password}"
-                }}
-                """)
+"""
+            else:
+                # Keep the existing config
+                new_config = current_config
+            
+                # Make sure there's a blank line at the end if not already present
+                if not new_config.endswith('\n\n'):
+                    new_config = new_config.rstrip('\n') + '\n\n'
+        
+            # Append the new network configuration
+            new_config += f"""network={{
+    ssid="{ssid}"
+    psk="{password}"
+    priority=10
+}}
+"""
+        
+            # Write the updated configuration
+            with open(WPA_SUPPLICANT_FILE, 'w') as f:
+                f.write(new_config)
+            
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(b"Wi-Fi credentials updated. Please reboot the device.")
+            self.wfile.write(f"WiFi network '{ssid}' added. Please reboot the device.".encode())
         except Exception as e:
             self.send_response(500)
             self.end_headers()
