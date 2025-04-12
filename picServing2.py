@@ -8,10 +8,7 @@ import socket
 import subprocess
 import requests
 from PIL import Image, ImageOps, ImageEnhance, ImageFilter
-import io
-import json
-import cgi
-import re
+
 from urllib.parse import parse_qs
 
 from picamera2 import Picamera2
@@ -1074,16 +1071,63 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             return
 
         try:
-            with open(WPA_SUPPLICANT_FILE, 'w') as f:
-                f.write(f"""country=US
-                ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-                update_config=1
+            def update_wpa_supplicant(ssid, password):
+                try:
+                    # Check if the current configuration already has these credentials
+                    current_config = ""
+                    if os.path.exists(WPA_SUPPLICANT_FILE):
+                        with open(WPA_SUPPLICANT_FILE, 'r') as f:
+                            current_config = f.read()
+                    
+                    # If the SSID is already in the config, don't update
+                    if f'ssid="{ssid}"' in current_config:
+                        print(f"WiFi network {ssid} already configured.")
+                        return
+                    
+                    # If this is a new file, create the header
+                    if not current_config or current_config.strip() == "":
+                        new_config = f"""country=US
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
 
-                network={{
-                    ssid="{ssid}"
-                    psk="{password}"
-                }}
-                """)
+"""
+                    else:
+                        # Keep the existing config
+                        new_config = current_config
+                        
+                        # Remove the final closing brace if it exists (to append new network)
+                        if new_config.strip().endswith('}'):
+                            new_config = new_config.strip()[:-1] + '\n\n'
+                    
+                    # Append the new network configuration
+                    new_config += f"""network={{
+    ssid="{ssid}"
+    psk="{password}"
+    priority=10
+}}
+"""
+                    
+                    # Write to a temporary file first (since we might need sudo)
+                    temp_file = '/tmp/wpa_supplicant.conf'
+                    with open(temp_file, 'w') as f:
+                        f.write(new_config)
+                    
+                    # Use sudo to copy the file to the correct location
+                    subprocess.run(['sudo', 'cp', temp_file, WPA_SUPPLICANT_FILE])
+                    subprocess.run(['sudo', 'chmod', '600', WPA_SUPPLICANT_FILE])
+                    
+                    print(f"Added WiFi configuration for network: {ssid}")
+                    
+                    # Restart the wireless interface to apply changes
+                    # subprocess.run(['sudo', 'systemctl', 'restart', 'wpa_supplicant'])
+                    # subprocess.run(['sudo', 'systemctl', 'restart', 'dhcpcd'])
+                    
+                    # Wait for the network to reconnect
+                    print("Waiting for network to reconnect...")
+                    time.sleep(10)
+                    
+                except Exception as e:
+                    print(f"Error updating wpa_supplicant: {e}")
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b"Wi-Fi credentials updated. Please reboot the device.")
