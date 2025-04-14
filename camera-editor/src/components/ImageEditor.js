@@ -188,7 +188,7 @@
       
         // Send to server
         await axios.post(
-          `http://${cameraIP}:${cameraPort}/save_edited_image`,
+          `https://${cameraIP}:${cameraPort}/save_edited_image`,
           formData,
           {
             headers: {

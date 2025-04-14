@@ -15,7 +15,7 @@ function SystemControls({ cameraIP, cameraPort }) {
     setSuccess('');
     
     try {
-      await axios.get(`http://${cameraIP}:${cameraPort}/reboot`);
+      await axios.get(`https://${cameraIP}:${cameraPort}/reboot`);
       setSuccess('Reboot command sent successfully. The camera will restart shortly.');
       setShowRebootModal(false);
     } catch (err) {
@@ -32,7 +32,7 @@ function SystemControls({ cameraIP, cameraPort }) {
     setSuccess('');
     
     try {
-      await axios.get(`http://${cameraIP}:${cameraPort}/shutdown`);
+      await axios.get(`https://${cameraIP}:${cameraPort}/shutdown`);
       setSuccess('Shutdown command sent successfully. The camera will power off shortly.');
       setShowShutdownModal(false);
     } catch (err) {
