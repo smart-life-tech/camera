@@ -19,6 +19,7 @@ function App() {
   const [error, setError] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
+  const [do_once, setDonce] = useState(true);
   // Add state for WiFi settings modal
   const [showWifiSettings, setShowWifiSettings] = useState(false);
 
@@ -28,12 +29,12 @@ function App() {
       // This is a workaround since we can't directly parse the HTML response
       // In a production app, you would have an API endpoint that returns JSON
       const response = await axios.get(`https://${cameraIP}:${cameraPort}/`);
-      
+
       // Parse the HTML to extract image URLs
       const html = response.data;
       const imageRegex = /<img src="\/([^"]+\.jpg)"/g;
       const matches = [...html.matchAll(imageRegex)];
-      
+
       const imageList = matches.map(match => match[1]).filter(Boolean);
       setImages(imageList);
       return imageList;
@@ -74,10 +75,11 @@ function App() {
     // Load saved connection details from localStorage
     const savedIP = localStorage.getItem('cameraIP');
     const savedPort = localStorage.getItem('cameraPort');
-    
-    if (savedIP && savedPort) {
-      //setCameraIP(savedIP);
-      //setCameraPort(savedPort);
+
+    if (savedIP && savedPort && !do_once) {
+      setCameraIP(savedIP);
+      setCameraPort(savedPort);
+      setDonce(false);
       // Optionally auto-connect
       // handleConnect();
     }
@@ -139,7 +141,7 @@ function App() {
 
       <Container>
         {!connected ? (
-          <ConnectForm 
+          <ConnectForm
             cameraIP={cameraIP}
             setCameraIP={setCameraIP}
             cameraPort={cameraPort}
@@ -150,14 +152,14 @@ function App() {
         ) : (
           <>
             {error && <Alert variant="danger">{error}</Alert>}
-            
+
             <Card className="mb-4">
               <Card.Body>
                 <Card.Title>Connected to Camera at {cameraIP}:{cameraPort}</Card.Title>
                 <div className="d-flex flex-wrap">
-                  <Button 
-                    variant="primary" 
-                    onClick={handleCapture} 
+                  <Button
+                    variant="primary"
+                    onClick={handleCapture}
                     disabled={loading}
                     className="me-2 mb-2"
                   >
@@ -171,18 +173,18 @@ function App() {
                       </>
                     )}
                   </Button>
-                  
+
                   {/* Add WiFi Settings button */}
-                  <Button 
-                    variant="info" 
+                  <Button
+                    variant="info"
                     onClick={() => setShowWifiSettings(true)}
                     className="me-2 mb-2"
                   >
                     <FontAwesomeIcon icon={faWifi} /> WiFi Settings
                   </Button>
-                  
-                  <Button 
-                    variant="secondary" 
+
+                  <Button
+                    variant="secondary"
                     onClick={() => {
                       setConnected(false);
                       setImages([]);
@@ -194,28 +196,28 @@ function App() {
                 </div>
               </Card.Body>
             </Card>
-            
+
             {/* Add SystemControls component */}
             <Card className="mb-4">
               <Card.Body>
                 <Card.Title><FontAwesomeIcon icon={faCogs} /> System Controls</Card.Title>
-                <SystemControls 
-                  cameraIP={cameraIP} 
-                  cameraPort={cameraPort} 
+                <SystemControls
+                  cameraIP={cameraIP}
+                  cameraPort={cameraPort}
                 />
               </Card.Body>
             </Card>
 
             <h2>Image Gallery</h2>
             {loading && <Spinner animation="border" />}
-            
+
             <Row>
               {images.map((image) => (
                 <Col md={4} sm={6} className="mb-4" key={image}>
                   <Card>
-                    <Card.Img 
-                      variant="top" 
-                      src={`https://${cameraIP}:${cameraPort}/${image}`} 
+                    <Card.Img
+                      variant="top"
+                      src={`https://${cameraIP}:${cameraPort}/${image}`}
                       alt={image}
                       style={{ height: '200px', objectFit: 'cover', cursor: 'pointer' }}
                       onClick={() => handleEdit(image)}
@@ -247,7 +249,7 @@ function App() {
       </Container>
 
       {/* Include the WifiSettings modal */}
-      <WifiSettings 
+      <WifiSettings
         show={showWifiSettings}
         onHide={() => setShowWifiSettings(false)}
         cameraIP={cameraIP}

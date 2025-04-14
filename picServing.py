@@ -59,7 +59,7 @@ print(f"Server IP address: {current_ip}")
 if IS_RASPBERRY_PI:
     IMAGE_DIR = '/home/user/camera'  # Path on Raspberry Pi
 else:
-    IMAGE_DIR ='C:/Users/USER/OneDrive/Pictures/Screenshots'  #  os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')  # Local development path
+    IMAGE_DIR ='C:/Users/USER/OneDrive/Pictures/Screenshots/'  #  os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')  # Local development path
 
 PORT = 5000
 WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
