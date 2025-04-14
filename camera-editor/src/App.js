@@ -94,7 +94,7 @@ function App() {
 
     setLoading(true);
     try {
-      await axios.get(`http://${cameraIP}:${cameraPort}/delete/${imageName}`);
+      await axios.get(`https://${cameraIP}:${cameraPort}/delete/${imageName}`);
       await fetchImages();
     } catch (err) {
       console.error('Error deleting image:', err);
@@ -119,7 +119,7 @@ function App() {
   const handleCapture = useCallback(async () => {
     setLoading(true);
     try {
-      await axios.get(`http://${cameraIP}:${cameraPort}/capture`);
+      await axios.get(`https://${cameraIP}:${cameraPort}/capture`);
       await fetchImages();
     } catch (err) {
       console.error('Error capturing image:', err);
@@ -215,7 +215,7 @@ function App() {
                   <Card>
                     <Card.Img 
                       variant="top" 
-                      src={`http://${cameraIP}:${cameraPort}/${image}`} 
+                      src={`https://${cameraIP}:${cameraPort}/${image}`} 
                       alt={image}
                       style={{ height: '200px', objectFit: 'cover', cursor: 'pointer' }}
                       onClick={() => handleEdit(image)}
@@ -258,7 +258,7 @@ function App() {
         <ImageEditor
           show={showEditor}
           onHide={handleCloseEditor}
-          imageUrl={`http://${cameraIP}:${cameraPort}/${selectedImage}`}
+          imageUrl={`https://${cameraIP}:${cameraPort}/${selectedImage}`}
           imageName={selectedImage}
           cameraIP={cameraIP}
           cameraPort={cameraPort}
