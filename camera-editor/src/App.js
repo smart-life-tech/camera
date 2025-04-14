@@ -32,7 +32,7 @@ function App() {
 
       // Parse the HTML to extract image URLs
       const html = response.data;
-      const imageRegex = /<img src="\/([^"]+\.jpg)"/g;
+      const imageRegex = /<img src="\/([^"]+\.(jpg|png))"/g;
       const matches = [...html.matchAll(imageRegex)];
 
       const imageList = matches.map(match => match[1]).filter(Boolean);
