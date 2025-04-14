@@ -27,7 +27,7 @@ function App() {
     try {
       // This is a workaround since we can't directly parse the HTML response
       // In a production app, you would have an API endpoint that returns JSON
-      const response = await axios.get(`http://${cameraIP}:${cameraPort}/`);
+      const response = await axios.get(`https://${cameraIP}:${cameraPort}/`);
       
       // Parse the HTML to extract image URLs
       const html = response.data;
@@ -77,7 +77,7 @@ function App() {
     
     if (savedIP && savedPort) {
       //setCameraIP(savedIP);
-      setCameraPort(savedPort);
+      //setCameraPort(savedPort);
       // Optionally auto-connect
       // handleConnect();
     }
