@@ -59,9 +59,9 @@ function App() {
     try {
       // Use the full ngrok URL instead of constructing it with IP and port
       const baseUrl = cameraIP.includes('ngrok') ? cameraIP : `http://${ip}:${port}`;
-      const response = await axios.get(`${baseUrl}/`);
-      //const ngrokUrl = "https://9e2b-102-89-23-37.ngrok-free.app"; // Replace with your actual ngrok URL
-      //const response = await axios.get(`${ngrokUrl}/`);
+      //const response = await axios.get(`${baseUrl}/`);
+      const ngrokUrl = "https://9e2b-102-89-23-37.ngrok-free.app"; // Replace with your actual ngrok URL
+      const response = await axios.get(`${ngrokUrl}/`);
       // Parse the HTML to extract image URLs
       const html = response.data;
       // Updated regex to match both .jpg and .png files
