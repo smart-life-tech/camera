@@ -27,7 +27,29 @@ function App() {
     setFetchingIP(true);
     try {
       const response = await axios.get('https://christlight.pythonanywhere.com/read');
-      const ip = response.data.trim();
+    
+      // Check what type of data we're getting
+      console.log('Response data type:', typeof response.data);
+      console.log('Response data:', response.data);
+    
+      // Handle different response formats
+      let ip;
+      if (typeof response.data === 'string') {
+        ip = response.data.trim();
+      } else if (typeof response.data === 'object' && response.data.content) {
+        // If the response is an object with a content property
+        ip = response.data.content.trim();
+      } else if (typeof response.data === 'object') {
+        // Try to stringify the object and extract IP
+        const dataStr = JSON.stringify(response.data);
+        console.log('Stringified data:', dataStr);
+      
+        // Look for an IP pattern in the stringified data
+        const ipPattern = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/;
+        const match = dataStr.match(ipPattern);
+        ip = match ? match[0] : null;
+      }
+    
       if (ip && ip !== cameraIP) {
         setCameraIP(ip);
         localStorage.setItem('cameraIP', ip);
