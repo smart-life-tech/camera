@@ -28,34 +28,23 @@ function App() {
     try {
       const response = await axios.get('https://christlight.pythonanywhere.com/read');
     
-      // Check what type of data we're getting
       console.log('Response data type:', typeof response.data);
       console.log('Response data:', response.data);
     
-      // Handle different response formats
-      let ip;
-      if (typeof response.data === 'string') {
-        ip = response.data.trim();
-      } else if (typeof response.data === 'object' && response.data.content) {
-        // If the response is an object with a content property
-        ip = response.data.content.trim();
-      } else if (typeof response.data === 'object') {
-        // Try to stringify the object and extract IP
-        const dataStr = JSON.stringify(response.data);
-        console.log('Stringified data:', dataStr);
-      
-        // Look for an IP pattern in the stringified data
-        const ipPattern = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/;
-        const match = dataStr.match(ipPattern);
-        ip = match ? match[0] : null;
-      }
+      let ip = null;
     
-      if (ip && ip !== cameraIP) {
+      // Handle the specific response format {content: '192.168.137.1'}
+      if (response.data && response.data.content) {
+        ip = response.data.content;
+        console.log(`Retrieved camera IP from remote service: ${ip}`);
+      
+        // Update state and localStorage
         setCameraIP(ip);
         localStorage.setItem('cameraIP', ip);
-        console.log(`Retrieved camera IP from remote service: ${ip}`);
+      
         return ip;
       }
+    
       return null;
     } catch (err) {
       console.error('Error fetching camera IP from remote service:', err);
@@ -63,7 +52,7 @@ function App() {
     } finally {
       setFetchingIP(false);
     }
-  }, [cameraIP]);
+  }, []);  // Remove cameraIP from dependencies to avoid unnecessary re-renders
 
   // Define fetchImages with useCallback
   const fetchImages = useCallback(async (ip = cameraIP, port = cameraPort) => {
