@@ -173,7 +173,7 @@ class MyHTTPRequestHandler(CORSHTTPRequestHandler):
             self.wfile.write(f'{{"success": false, "error": "{str(e)}"}}').encode()
 
     def list_images(self):
-        images = [f for f in os.listdir(IMAGE_DIR) if f.endswith('.jpg')]
+        images = [f for f in os.listdir(IMAGE_DIR) if f.endswith('.jpg') or f.endswith('.png')]
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
