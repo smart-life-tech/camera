@@ -1213,6 +1213,15 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.wfile.write(b"image capture done \n")
         #self.wfile.write(b'<a href="/refresh">back home</a>')
         # Wait for 1 second before capturing the next image
+    def end_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        super().end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.end_headers()
 class ThreadedTCPServer(ThreadingMixIn, TCPServer):
     pass
 def start_http_server():

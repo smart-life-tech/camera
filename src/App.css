@@ -1,0 +1,58 @@
+.app {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.card {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.editor-controls {
+  background-color: #f1f3f5;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.slider-container {
+  margin-bottom: 10px;
+}
+
+.slider-label {
+  display: inline-block;
+  width: 100px;
+  font-weight: 500;
+}
+
+.image-container {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 15px;
+}
+
+canvas {
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+}
+
+.anchor-point {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: red;
+  border-radius: 50%;
+  cursor: move;
+}
+
+.effect-btn {
+  margin: 5px;
+  border-radius: 20px;
+}
