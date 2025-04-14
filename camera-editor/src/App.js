@@ -57,9 +57,9 @@ function App() {
   // Define fetchImages with useCallback
   const fetchImages = useCallback(async (ip = cameraIP, port = cameraPort) => {
     try {
-      // This is a workaround since we can't directly parse the HTML response
-      // In a production app, you would have an API endpoint that returns JSON
-      const response = await axios.get(`https://${ip}:${port}/`);
+      // Use the full ngrok URL instead of constructing it with IP and port
+      const baseUrl = cameraIP.includes('ngrok') ? cameraIP : `http://${ip}:${port}`;
+      const response = await axios.get(`${baseUrl}/`);
       //const ngrokUrl = "https://9e2b-102-89-23-37.ngrok-free.app"; // Replace with your actual ngrok URL
       //const response = await axios.get(`${ngrokUrl}/`);
       // Parse the HTML to extract image URLs
@@ -148,7 +148,8 @@ function App() {
   }, [fetchCameraIP]);
 
   const handleDownload = useCallback((imageName) => {
-    window.open(`https://${cameraIP}:${cameraPort}/download/${imageName}`, '_blank');
+    const baseUrl = cameraIP.includes('ngrok') ? cameraIP : `http://${cameraIP}:${cameraPort}`;
+    window.open(`${baseUrl}/download/${imageName}`, '_blank');
   }, [cameraIP, cameraPort]);
 
   const handleDelete = useCallback(async (imageName) => {
@@ -158,7 +159,8 @@ function App() {
 
     setLoading(true);
     try {
-      await axios.get(`https://${cameraIP}:${cameraPort}/delete/${imageName}`);
+      const baseUrl = cameraIP.includes('ngrok') ? cameraIP : `http://${cameraIP}:${cameraPort}`;
+      await axios.get(`${baseUrl}/delete/${imageName}`);
       await fetchImages();
     } catch (err) {
       console.error('Error deleting image:', err);
@@ -183,7 +185,8 @@ function App() {
   const handleCapture = useCallback(async () => {
     setLoading(true);
     try {
-      await axios.get(`https://${cameraIP}:${cameraPort}/capture`);
+      const baseUrl = cameraIP.includes('ngrok') ? cameraIP : `http://${cameraIP}:${cameraPort}`;
+      await axios.get(`${baseUrl}/capture`);
       await fetchImages();
     } catch (err) {
       console.error('Error capturing image:', err);
