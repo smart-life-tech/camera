@@ -6,10 +6,10 @@ from socketserver import ThreadingMixIn, TCPServer
 import socket
 import subprocess
 from PIL import Image, ImageOps, ImageEnhance, ImageFilter
-import io
+import requests
 import ssl
 from http.server import HTTPServer
-# Try to import PiCamera - this will work on Raspberry Pi
+# Define the directory where images will be stored
 try:
     from picamera2 import Picamera2
     import RPi.GPIO as GPIO
@@ -46,7 +46,9 @@ def get_ip_address(interface=None):
     hostname = socket.gethostname()
     ip_address = socket.gethostbyname(hostname)
     return ip_address
-
+#wlan0_ip = get_ip_address('wlan0')
+#current_ip = wlan0_ip
+# Function to read the stored IP address from a file
 # Get IP address
 if IS_RASPBERRY_PI:
     current_ip = get_ip_address('wlan0') or get_ip_address()
@@ -55,6 +57,48 @@ else:
 
 print(f"Server IP address: {current_ip}")
 
+file_path = '/home/user/camera/example.txt'
+def read_stored_ip(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            return file.read().strip()
+    return None
+# Try to import PiCamera - this will work on Raspberry Pi
+def write_ip_to_file(file_path, ip):
+    with open(file_path, 'w') as file:
+        file.write(ip)
+    
+    # Set a maximum number of retries
+    max_retries = 3
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        try:
+            url = 'https://christlight.pythonanywhere.com/write'
+            data = {'content': ip}
+            response = requests.post(url, json=data, timeout=10)  # Add 10-second timeout
+            print(response.json())
+            if response.status_code == 200:
+                print("IP address sent successfully.")
+                break
+        except requests.exceptions.RequestException as e:
+            print(f"Error: {e}")
+            retry_count += 1
+            if retry_count >= max_retries:
+                print("Maximum retries reached. Continuing without sending IP.")
+                break
+        time.sleep(5)  # Reduced from 10 to 5 seconds
+
+# Read the stored IP address
+stored_ip = read_stored_ip(file_path)
+
+# Check if the IP address has changed
+if stored_ip != current_ip:
+    # Update the stored IP address
+    write_ip_to_file(file_path, current_ip)
+else:
+    print("IP address has not changed.")
+    
 # Configuration
 if IS_RASPBERRY_PI:
     IMAGE_DIR = '/home/user/camera'  # Path on Raspberry Pi
@@ -432,7 +476,29 @@ def generate_self_signed_cert():
         print(f"Error generating self-signed certificate: {e}")
         print("Falling back to HTTP...")
 
+def print_network_info():
+    import socket
+    import subprocess
+    
+    print("\n--- NETWORK INFORMATION ---")
+    try:
+        # Get all IP addresses
+        hostname = socket.gethostname()
+        print(f"Hostname: {hostname}")
+        
+        # Windows-specific command to get detailed network info
+        result = subprocess.check_output("ipconfig", shell=True).decode('utf-8')
+        print("\nNetwork interfaces:")
+        print(result)
+        
+        print("\nTry connecting to the server using one of the IPv4 addresses listed above.")
+        print(f"For example: http://192.168.x.x:{PORT}/")
+        print("If using a phone hotspot, look for the IP address under 'Wireless LAN adapter'")
+    except Exception as e:
+        print(f"Error getting network info: {e}")
+
 if __name__ == '__main__':
+    #print_network_info()
     try:
         # Generate self-signed certificate if needed
         generate_self_signed_cert()

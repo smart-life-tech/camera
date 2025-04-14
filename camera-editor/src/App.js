@@ -19,22 +19,43 @@ function App() {
   const [error, setError] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
-  const [do_once, setDonce] = useState(true);
-  // Add state for WiFi settings modal
   const [showWifiSettings, setShowWifiSettings] = useState(false);
+  const [fetchingIP, setFetchingIP] = useState(false);
 
-  // Define fetchImages first with useCallback
-  const fetchImages = useCallback(async () => {
+  // Function to fetch the camera IP from the remote service
+  const fetchCameraIP = useCallback(async () => {
+    setFetchingIP(true);
+    try {
+      const response = await axios.get('https://christlight.pythonanywhere.com/read');
+      const ip = response.data.trim();
+      if (ip && ip !== cameraIP) {
+        setCameraIP(ip);
+        localStorage.setItem('cameraIP', ip);
+        console.log(`Retrieved camera IP from remote service: ${ip}`);
+        return ip;
+      }
+      return null;
+    } catch (err) {
+      console.error('Error fetching camera IP from remote service:', err);
+      return null;
+    } finally {
+      setFetchingIP(false);
+    }
+  }, [cameraIP]);
+
+  // Define fetchImages with useCallback
+  const fetchImages = useCallback(async (ip = cameraIP, port = cameraPort) => {
     try {
       // This is a workaround since we can't directly parse the HTML response
       // In a production app, you would have an API endpoint that returns JSON
-      const response = await axios.get(`https://${cameraIP}:${cameraPort}/`);
-
+      const response = await axios.get(`http://${ip}:${port}/`);
+      
       // Parse the HTML to extract image URLs
       const html = response.data;
+      // Updated regex to match both .jpg and .png files
       const imageRegex = /<img src="\/([^"]+\.(jpg|png))"/g;
       const matches = [...html.matchAll(imageRegex)];
-
+      
       const imageList = matches.map(match => match[1]).filter(Boolean);
       setImages(imageList);
       return imageList;
@@ -71,22 +92,51 @@ function App() {
     }
   }, [cameraIP, cameraPort, fetchImages]);
 
+  // Add a function to auto-connect using the fetched IP
+  const autoConnect = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const ip = await fetchCameraIP();
+      if (ip) {
+        // Test connection by fetching images with the new IP
+        await fetchImages(ip, cameraPort);
+        setConnected(true);
+        console.log(`Auto-connected to camera at ${ip}:${cameraPort}`);
+      } else {
+        throw new Error('Could not retrieve a valid camera IP');
+      }
+    } catch (err) {
+      console.error('Auto-connect error:', err);
+      setError(`Failed to auto-connect to camera. ${err.message}`);
+      setConnected(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchCameraIP, fetchImages, cameraPort]);
+
   useEffect(() => {
     // Load saved connection details from localStorage
     const savedIP = localStorage.getItem('cameraIP');
     const savedPort = localStorage.getItem('cameraPort');
-
-    if (savedIP && savedPort && !do_once) {
+    
+    if (savedIP) {
       setCameraIP(savedIP);
-      setCameraPort(savedPort);
-      setDonce(false);
-      // Optionally auto-connect
-      // handleConnect();
     }
-  }, [handleConnect]);
+    
+    if (savedPort) {
+      setCameraPort(savedPort);
+    }
+    
+    // If we don't have a saved IP or we want to always check for the latest IP
+    if (!savedIP || true) {
+      fetchCameraIP();
+    }
+  }, [fetchCameraIP]);
 
   const handleDownload = useCallback((imageName) => {
-    window.open(`https://${cameraIP}:${cameraPort}/download/${imageName}`, '_blank');
+    window.open(`http://${cameraIP}:${cameraPort}/download/${imageName}`, '_blank');
   }, [cameraIP, cameraPort]);
 
   const handleDelete = useCallback(async (imageName) => {
@@ -96,7 +146,7 @@ function App() {
 
     setLoading(true);
     try {
-      await axios.get(`https://${cameraIP}:${cameraPort}/delete/${imageName}`);
+      await axios.get(`http://${cameraIP}:${cameraPort}/delete/${imageName}`);
       await fetchImages();
     } catch (err) {
       console.error('Error deleting image:', err);
@@ -121,7 +171,7 @@ function App() {
   const handleCapture = useCallback(async () => {
     setLoading(true);
     try {
-      await axios.get(`https://${cameraIP}:${cameraPort}/capture`);
+      await axios.get(`http://${cameraIP}:${cameraPort}/capture`);
       await fetchImages();
     } catch (err) {
       console.error('Error capturing image:', err);
@@ -141,14 +191,36 @@ function App() {
 
       <Container>
         {!connected ? (
-          <ConnectForm
-            cameraIP={cameraIP}
-            setCameraIP={setCameraIP}
-            cameraPort={cameraPort}
-            setCameraPort={setCameraPort}
-            handleConnect={handleConnect}
-            loading={loading}
-          />
+          <div>
+            <ConnectForm 
+              cameraIP={cameraIP}
+              setCameraIP={setCameraIP}
+              cameraPort={cameraPort}
+              setCameraPort={setCameraPort}
+              handleConnect={handleConnect}
+              loading={loading}
+            />
+            
+            <div className="mt-4 text-center">
+              <p>- OR -</p>
+              <Button 
+                variant="success" 
+                onClick={autoConnect} 
+                disabled={loading || fetchingIP}
+              >
+                {(loading || fetchingIP) ? (
+                  <>
+                    <Spinner as="span" animation="border" size="sm" /> Auto-Connecting...
+                  </>
+                ) : (
+                  'Auto-Connect to Camera'
+                )}
+              </Button>
+              <p className="mt-2 text-muted small">
+                This will fetch the camera's IP address from the remote service
+              </p>
+            </div>
+          </div>
         ) : (
           <>
             {error && <Alert variant="danger">{error}</Alert>}
@@ -217,7 +289,7 @@ function App() {
                   <Card>
                     <Card.Img
                       variant="top"
-                      src={`https://${cameraIP}:${cameraPort}/${image}`}
+                      src={`http://${cameraIP}:${cameraPort}/${image}`}
                       alt={image}
                       style={{ height: '200px', objectFit: 'cover', cursor: 'pointer' }}
                       onClick={() => handleEdit(image)}
@@ -260,7 +332,7 @@ function App() {
         <ImageEditor
           show={showEditor}
           onHide={handleCloseEditor}
-          imageUrl={`https://${cameraIP}:${cameraPort}/${selectedImage}`}
+          imageUrl={`http://${cameraIP}:${cameraPort}/${selectedImage}`}
           imageName={selectedImage}
           cameraIP={cameraIP}
           cameraPort={cameraPort}
