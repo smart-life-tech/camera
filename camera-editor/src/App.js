@@ -64,6 +64,7 @@ function App() {
       const response = await axios.get(`${ngrokUrl}/`);
       // Parse the HTML to extract image URLs
       const html = response.data;
+      console.log(html)
       // Updated regex to match both .jpg and .png files
       const imageRegex = /<img src="\/([^"]+\.(jpg|png))"/g;
       const matches = [...html.matchAll(imageRegex)];
