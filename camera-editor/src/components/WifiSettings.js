@@ -27,7 +27,7 @@ function WifiSettings({ show, onHide, cameraIP, cameraPort }) {
       formData.append('password', password);
       
       const response = await axios.post(
-        `http://${cameraIP}:${cameraPort}/update_wifi`,
+        `https://${cameraIP}:${cameraPort}/update_wifi`,
         formData.toString(),
         {
           headers: {
