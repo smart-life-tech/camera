@@ -84,7 +84,7 @@ function App() {
   }, [handleConnect]);
 
   const handleDownload = useCallback((imageName) => {
-    window.open(`http://${cameraIP}:${cameraPort}/download/${imageName}`, '_blank');
+    window.open(`https://${cameraIP}:${cameraPort}/download/${imageName}`, '_blank');
   }, [cameraIP, cameraPort]);
 
   const handleDelete = useCallback(async (imageName) => {

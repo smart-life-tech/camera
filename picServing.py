@@ -57,12 +57,16 @@ print(f"Server IP address: {current_ip}")
 
 # Configuration
 if IS_RASPBERRY_PI:
-    IMAGE_DIR = 'C:/Users/USER/OneDrive/Pictures/Screenshots'  # Path on Raspberry Pi
+    IMAGE_DIR = '/home/user/camera'  # Path on Raspberry Pi
 else:
-    IMAGE_DIR = 'C:/Users/USER/OneDrive/Pictures/Screenshots'  # os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')  # Local development path
+    IMAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')  # Local development path
 
-PORT = 8080
+PORT = 5000
 WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
+
+# SSL Certificate paths - you'll need to generate these
+CERT_FILE = 'C:/Users/USER/Documents/raspberrypi/camera/server.crt'  # Path to your certificate file
+KEY_FILE = 'C:/Users/USER/Documents/raspberrypi/camera/server.key'   # Path to your private key file
 
 # Create image directory if it doesn't exist
 if not os.path.exists(IMAGE_DIR):
@@ -364,13 +368,76 @@ class ThreadedTCPServer(ThreadingMixIn, TCPServer):
 def start_http_server():
     os.chdir(IMAGE_DIR)
     server_address = ('', PORT)  # Empty string means listen on all available interfaces
-    with ThreadedTCPServer(server_address, MyHTTPRequestHandler) as httpd:
-        print(f"Serving images on port {PORT}...")
-        httpd.serve_forever()
+    
+    # Create HTTPS server
+    httpd = ThreadedTCPServer(server_address, MyHTTPRequestHandler)
+    
+    # Wrap with SSL
+    try:
+        # Create SSL context
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(certfile=CERT_FILE, keyfile=KEY_FILE)
+        
+        # Wrap socket with SSL
+        httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
+        
+        print(f"Serving images securely on HTTPS port {PORT}...")
+    except Exception as e:
+        print(f"Failed to enable HTTPS: {e}")
+        print(f"Falling back to HTTP on port {PORT}...")
+    
+    httpd.serve_forever()
+
+def generate_self_signed_cert():
+    """Generate a self-signed certificate if one doesn't exist"""
+    if os.path.exists(CERT_FILE) and os.path.exists(KEY_FILE):
+        print(f"Using existing SSL certificates: {CERT_FILE} and {KEY_FILE}")
+        return
+    
+    try:
+        from OpenSSL import crypto
+        
+        # Create a key pair
+        k = crypto.PKey()
+        k.generate_key(crypto.TYPE_RSA, 2048)
+        
+        # Create a self-signed cert
+        cert = crypto.X509()
+        cert.get_subject().C = "US"
+        cert.get_subject().ST = "State"
+        cert.get_subject().L = "City"
+        cert.get_subject().O = "Organization"
+        cert.get_subject().OU = "Organizational Unit"
+        cert.get_subject().CN = socket.gethostname()
+        cert.set_serial_number(1000)
+        cert.gmtime_adj_notBefore(0)
+        cert.gmtime_adj_notAfter(10*365*24*60*60)  # 10 years
+        cert.set_issuer(cert.get_subject())
+        cert.set_pubkey(k)
+        cert.sign(k, 'sha256')
+        
+        # Write the certificate and key to files
+        with open(CERT_FILE, "wb") as f:
+            f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+        
+        with open(KEY_FILE, "wb") as f:
+            f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
+            
+        print(f"Generated self-signed SSL certificate: {CERT_FILE} and {KEY_FILE}")
+    except ImportError:
+        print("PyOpenSSL not installed. Cannot generate self-signed certificate.")
+        print("Install with: pip install pyopenssl")
+        print("Falling back to HTTP...")
+    except Exception as e:
+        print(f"Error generating self-signed certificate: {e}")
+        print("Falling back to HTTP...")
 
 if __name__ == '__main__':
     try:
-        print(f"Server running at http://{current_ip}:{PORT}/")
+        # Generate self-signed certificate if needed
+        generate_self_signed_cert()
+        
+        print(f"Server running at https://{current_ip}:{PORT}/")
         server_thread = threading.Thread(target=start_http_server)
         server_thread.daemon = True
         server_thread.start()
