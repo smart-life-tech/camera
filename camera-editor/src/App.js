@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Form, Spinner, Alert } from 'react-bootstrap';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Container, Row, Col, Card, Button, Spinner, Alert } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCamera, faWifi, faCogs, faDownload, faTrash, faEdit } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
@@ -22,20 +22,29 @@ function App() {
   // Add state for WiFi settings modal
   const [showWifiSettings, setShowWifiSettings] = useState(false);
 
-  useEffect(() => {
-    // Load saved connection details from localStorage
-    const savedIP = localStorage.getItem('cameraIP');
-    const savedPort = localStorage.getItem('cameraPort');
-    
-    if (savedIP && savedPort) {
-      setCameraIP(savedIP);
-      setCameraPort(savedPort);
-      // Optionally auto-connect
-      handleConnect();
+  // Define fetchImages first with useCallback
+  const fetchImages = useCallback(async () => {
+    try {
+      // This is a workaround since we can't directly parse the HTML response
+      // In a production app, you would have an API endpoint that returns JSON
+      const response = await axios.get(`http://${cameraIP}:${cameraPort}/`);
+      
+      // Parse the HTML to extract image URLs
+      const html = response.data;
+      const imageRegex = /<img src="\/([^"]+\.jpg)"/g;
+      const matches = [...html.matchAll(imageRegex)];
+      
+      const imageList = matches.map(match => match[1]).filter(Boolean);
+      setImages(imageList);
+      return imageList;
+    } catch (err) {
+      console.error('Error fetching images:', err);
+      throw err;
     }
-  }, []);
+  }, [cameraIP, cameraPort]);
 
-  const handleConnect = async () => {
+  // Then define handleConnect with useCallback
+  const handleConnect = useCallback(async () => {
     if (!cameraIP) {
       setError('Please enter the camera IP address');
       return;
@@ -59,33 +68,26 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [cameraIP, cameraPort, fetchImages]);
 
-  const fetchImages = async () => {
-    try {
-      // This is a workaround since we can't directly parse the HTML response
-      // In a production app, you would have an API endpoint that returns JSON
-      const response = await axios.get(`http://${cameraIP}:${cameraPort}/`);
-      
-      // Parse the HTML to extract image URLs
-      const html = response.data;
-      const imageRegex = /<img src="\/([^"]+\.jpg)"/g;
-      const matches = [...html.matchAll(imageRegex)];
-      
-      const imageList = matches.map(match => match[1]).filter(Boolean);
-      setImages(imageList);
-      return imageList;
-    } catch (err) {
-      console.error('Error fetching images:', err);
-      throw err;
+  useEffect(() => {
+    // Load saved connection details from localStorage
+    const savedIP = localStorage.getItem('cameraIP');
+    const savedPort = localStorage.getItem('cameraPort');
+    
+    if (savedIP && savedPort) {
+      //setCameraIP(savedIP);
+      setCameraPort(savedPort);
+      // Optionally auto-connect
+      // handleConnect();
     }
-  };
+  }, [handleConnect]);
 
-  const handleDownload = (imageName) => {
+  const handleDownload = useCallback((imageName) => {
     window.open(`http://${cameraIP}:${cameraPort}/download/${imageName}`, '_blank');
-  };
+  }, [cameraIP, cameraPort]);
 
-  const handleDelete = async (imageName) => {
+  const handleDelete = useCallback(async (imageName) => {
     if (!window.confirm(`Are you sure you want to delete ${imageName}?`)) {
       return;
     }
@@ -100,21 +102,21 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [cameraIP, cameraPort, fetchImages]);
 
-  const handleEdit = (imageName) => {
+  const handleEdit = useCallback((imageName) => {
     setSelectedImage(imageName);
     setShowEditor(true);
-  };
+  }, []);
 
-  const handleCloseEditor = () => {
+  const handleCloseEditor = useCallback(() => {
     setShowEditor(false);
     setSelectedImage(null);
     // Refresh images after editing
     fetchImages();
-  };
+  }, [fetchImages]);
 
-  const handleCapture = async () => {
+  const handleCapture = useCallback(async () => {
     setLoading(true);
     try {
       await axios.get(`http://${cameraIP}:${cameraPort}/capture`);
@@ -125,7 +127,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [cameraIP, cameraPort, fetchImages]);
 
   return (
     <div className="app">

@@ -2,51 +2,102 @@ import time
 import os
 import threading
 from http.server import SimpleHTTPRequestHandler
-from socketserver import TCPServer
+from socketserver import ThreadingMixIn, TCPServer
 import socket
 import subprocess
-from PIL import Image
+from PIL import Image, ImageOps, ImageEnhance, ImageFilter
 import io
-from picamera2 import Picamera2
+import ssl
+from http.server import HTTPServer
+# Try to import PiCamera - this will work on Raspberry Pi
+try:
+    from picamera2 import Picamera2
+    import RPi.GPIO as GPIO
+    
+    # Setup the camera
+    TRIGGER_PIN = 27  
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(TRIGGER_PIN, GPIO.OUT)
+    
+    # Initialize the camera
+    camera = Picamera2()
+    camera.configure(camera.create_still_configuration(main={"size": camera.sensor_resolution}))
+    camera.start()
+    time.sleep(2)  # Allow time for camera to initialize
+    
+    IS_RASPBERRY_PI = True
+except ImportError:
+    print("PiCamera not found. Running in development mode without camera functionality.")
+    IS_RASPBERRY_PI = False
 
-# Setup the camera
-camera = Picamera2()
-# Configure the camera with default settings 
-camera.configure(camera.create_still_configuration(main={"size": camera.sensor_resolution}))
-# Start the camera 
-camera.start()
-IMAGE_DIR = '/home/user/camera'  # Ensure this is the correct directory
-#IMAGE_DIR=input("Enter the directory path to the photos to be served: ")
-PORT = 8080
-WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
-os.system('sudo ip addr add 192.168.233.194/24 dev wlan0')
-def get_ip_address():
-    # Get the IP address of the Raspberry Pi
-    hostname = socket.gethostname()  # Get the hostname of the Pi
-    ip_address = socket.gethostbyname(hostname)  # Get the corresponding IP address
+# Get the local IP address
+def get_ip_address(interface=None):
+    if interface:
+        try:
+            result = subprocess.check_output(f'ip addr show {interface}', shell=True).decode('utf-8')
+            for line in result.split('\n'):
+                if 'inet ' in line:
+                    return line.split()[1].split('/')[0]
+        except subprocess.CalledProcessError as e:
+            print(f"Error getting IP address for interface {interface}: {e}")
+            return None
+    
+    # Fallback to socket method
+    hostname = socket.gethostname()
+    ip_address = socket.gethostbyname(hostname)
     return ip_address
 
-def print_ip_address():
-    ip_address = get_ip_address()
-    print(f"Raspberry Pi IP Address: {ip_address}")
+# Get IP address
+if IS_RASPBERRY_PI:
+    current_ip = get_ip_address('wlan0') or get_ip_address()
+else:
+    current_ip = get_ip_address() or 'localhost'
 
-# Directory to store captured images
+print(f"Server IP address: {current_ip}")
+
+# Configuration
+if IS_RASPBERRY_PI:
+    IMAGE_DIR = 'C:/Users/USER/OneDrive/Pictures/Screenshots'  # Path on Raspberry Pi
+else:
+    IMAGE_DIR = 'C:/Users/USER/OneDrive/Pictures/Screenshots'  # os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')  # Local development path
+
+PORT = 8080
+WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
+
+# Create image directory if it doesn't exist
 if not os.path.exists(IMAGE_DIR):
     os.makedirs(IMAGE_DIR)
 
-class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
+# Create set_number.txt if it doesn't exist
+set_number_file = os.path.join(IMAGE_DIR, 'set_number.txt')
+if not os.path.exists(set_number_file):
+    with open(set_number_file, 'w') as f:
+        f.write('1')
+
+class CORSHTTPRequestHandler(SimpleHTTPRequestHandler):
+    def end_headers(self):
+        # Add CORS headers
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        super().end_headers()
+    
+    def do_OPTIONS(self):
+        # Handle preflight requests
+        self.send_response(200)
+        self.end_headers()
+
+class MyHTTPRequestHandler(CORSHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/':
-            # Serve index page with images list
+            self.list_images()
+        elif self.path == '/refresh':
             self.list_images()
         elif self.path.startswith('/delete/'):
-            # Handle image deletion
             image_name = self.path.split('/')[-1]
             self.delete_image(image_name)
-            # After deletion, serve the updated list
             self.list_images()
         elif self.path.startswith('/download/'):
-            # Handle image download
             image_name = self.path.split('/')[-1]
             self.download_image(image_name)
         elif self.path == '/reboot':
@@ -54,50 +105,106 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         elif self.path == '/shutdown':
             self.shutdown_system()
         elif self.path == '/capture':
-            self.capture_image()
+            if IS_RASPBERRY_PI:
+                GPIO.output(TRIGGER_PIN, GPIO.HIGH)
+                time.sleep(0.5)
+                GPIO.output(TRIGGER_PIN, GPIO.LOW)
+            self.capture_images()
         else:
-            # Serve the requested image file
             return super().do_GET()
 
+    def do_POST(self):
+        if self.path == '/update_wifi':
+            self.update_wifi_credentials()
+        elif self.path == '/save_edited_image':
+            self.save_edited_image()
+        else:
+            self.send_response(501)
+            self.end_headers()
+            self.wfile.write(b"Unsupported method ('POST')")
+
+    def save_edited_image(self):
+        content_type = self.headers['Content-Type']
+        if not content_type.startswith('multipart/form-data'):
+            self.send_response(400)
+            self.end_headers()
+            self.wfile.write(b'{"success": false, "error": "Invalid content type"}')
+            return
+        
+        # Get content length
+        content_length = int(self.headers['Content-Length'])
+        
+        # Get boundary
+        boundary = content_type.split('=')[1].encode()
+        
+        # Read the form data
+        form_data = self.rfile.read(content_length)
+        
+        # Parse the form data to get the image
+        try:
+            # Find the image data in the form
+            image_start = form_data.find(b'\r\n\r\n', form_data.find(b'filename')) + 4
+            image_end = form_data.rfind(b'--' + boundary + b'--') - 2
+            image_data = form_data[image_start:image_end]
+            
+            # Get the filename
+            filename_start = form_data.find(b'filename="') + 10
+            filename_end = form_data.find(b'"', filename_start)
+            filename = form_data[filename_start:filename_end].decode()
+            
+            # Save the image
+            image_path = os.path.join(IMAGE_DIR, filename)
+            with open(image_path, 'wb') as f:
+                f.write(image_data)
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{"success": true}')
+        except Exception as e:
+            print(f"Error saving edited image: {e}")
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(f'{{"success": false, "error": "{str(e)}"}}').encode()
+
     def list_images(self):
-        # List available images and add delete button for each image
         images = [f for f in os.listdir(IMAGE_DIR) if f.endswith('.jpg')]
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
-        self.wfile.write(b"<h3>Update Wi-Fi Credentials</h3>")
-        self.wfile.write(b"""
-        <form action="/update_wifi" method="POST">
-            <label for="ssid">SSID:</label><br>
-            <input type="text" id="ssid" name="ssid" required><br>
-            <label for="password">Password:</label><br>
-            <input type="password" id="password" name="password" required><br><br>
-            <input type="submit" value="Update Wi-Fi">
-        </form>
-        """)
-
-        self.wfile.write(b"<br><h3>System Controls</h3>")
-        self.wfile.write(b'<a href="/reboot">Reboot</a> | <a href="/shutdown">Shutdown</a>')
-        self.wfile.write(b"<br><h3>Capture Image</h3>")
-        self.wfile.write(b'<a href="/capture">Capture Image</a>')
-        self.wfile.write(b"<br><h3>Images</h3>")
-        self.wfile.write(b"</body></html>")
-        self.wfile.write(b"<html><head><title>Images</title>")
-        self.wfile.write(b"<style>img { width: 150px; margin: 10px; } </style></head><body>")
-        self.wfile.write(b"<h2>Captured Images</h2>")
+        # Simple HTML with images
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Camera Images</title>
+            <style>
+                body { font-family: Arial, sans-serif; }
+                .image-container { display: inline-block; margin: 10px; text-align: center; }
+                img { max-width: 200px; max-height: 200px; }
+            </style>
+        </head>
+        <body>
+            <h1>Camera Images</h1>
+        """
         
-        # Display images as thumbnails and links to delete them
         for image in images:
             image_url = f"/{image}"
-            download_url = f"/download/{image}"  # Download URL
-            self.wfile.write(f'<div style="display:inline-block; text-align:center; margin:10px;">'.encode())
-            self.wfile.write(f'<a href="{image_url}"><img src="{image_url}" alt="{image}"></a><br>'.encode())
-            self.wfile.write(f'<a href="/delete/{image}">Delete</a>'.encode())
-            self.wfile.write(f'<a href="{download_url}">Download</a>'.encode())  # Add download link
-            self.wfile.write(b"</div>")
-
-        self.wfile.write(b"</body></html>")
+            html += f"""
+            <div class="image-container">
+                <img src="{image_url}" alt="{image}">
+                <div>{image}</div>
+            </div>
+            """
+        
+        html += """
+        </body>
+        </html>
+        """
+        
+        self.wfile.write(html.encode())
 
     def delete_image(self, image_name):
         image_path = os.path.join(IMAGE_DIR, image_name)
@@ -106,30 +213,41 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             print(f"Deleted image: {image_name}")
         except Exception as e:
             print(f"Error deleting image: {e}")
+
     def download_image(self, image_name):
-        """Serve the image as a download."""
-        file_path = os.path.join(IMAGE_DIR, image_name)  # Get full path of the image
+        file_path = os.path.join(IMAGE_DIR, image_name)
         if os.path.isfile(file_path):
             self.send_response(200)
-            self.send_header('Content-type', 'application/octet-stream')  # Set content type for download
-            self.send_header('Content-Disposition', f'attachment; filename={image_name}')  # Force download
+            self.send_header('Content-type', 'application/octet-stream')
+            self.send_header('Content-Disposition', f'attachment; filename={image_name}')
             self.end_headers()
 
             with open(file_path, 'rb') as f:
                 self.wfile.write(f.read())
         else:
-            # If the file doesn't exist, send 404
             self.send_response(404)
             self.end_headers()
             self.wfile.write(b"Image not found.")
-    
+
     def update_wifi_credentials(self):
+        if not IS_RASPBERRY_PI:
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"WiFi settings would be updated (development mode)")
+            return
+            
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length).decode()
-        params = dict(p.split('=') for p in post_data.split('&'))
-
-        ssid = params.get('ssid')
-        password = params.get('password')
+        
+        # Parse the form data
+        from urllib.parse import parse_qs, unquote
+        
+        # Parse the query string and extract parameters
+        params = parse_qs(post_data)
+        
+        # Get the first value for each parameter and decode URL encoding
+        ssid = unquote(params.get('ssid', [''])[0])
+        password = unquote(params.get('password', [''])[0])
 
         if not ssid or not password:
             self.send_response(400)
@@ -137,21 +255,50 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             self.wfile.write(b"SSID and Password are required.")
             return
 
-        # Update wpa_supplicant.conf
         try:
-            with open(WPA_SUPPLICANT_FILE, 'w') as f:
-                f.write(f"""country=US
-                ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-                update_config=1
+            # Read existing configuration
+            current_config = ""
+            if os.path.exists(WPA_SUPPLICANT_FILE):
+                with open(WPA_SUPPLICANT_FILE, 'r') as f:
+                    current_config = f.read()
+        
+            # Check if this network is already configured
+            if f'ssid="{ssid}"' in current_config:
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(f"WiFi network '{ssid}' is already configured.".encode())
+                return
+        
+            # If this is a new file, create the header
+            if not current_config or current_config.strip() == "":
+                new_config = f"""country=US
+                    ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+                    update_config=1
 
-                network={{
+                    """
+            else:
+                # Keep the existing config
+                new_config = current_config
+            
+                # Make sure there's a blank line at the end if not already present
+                if not new_config.endswith('\n\n'):
+                    new_config = new_config.rstrip('\n') + '\n\n'
+        
+            # Append the new network configuration
+            new_config += f"""network={{
                     ssid="{ssid}"
                     psk="{password}"
+                    priority=10
                 }}
-                """)
+                """
+        
+            # Write the updated configuration
+            with open(WPA_SUPPLICANT_FILE, 'w') as f:
+                f.write(new_config)
+            
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(b"Wi-Fi credentials updated. Please reboot the device.")
+            self.wfile.write(f"WiFi network '{ssid}' added. Please reboot the device.".encode())
         except Exception as e:
             self.send_response(500)
             self.end_headers()
@@ -163,96 +310,75 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"Rebooting system...")
         print("Rebooting system...")
-        subprocess.run(['sudo', 'reboot'])
+        
+        if IS_RASPBERRY_PI:
+            subprocess.run(['sudo', 'reboot'])
+        else:
+            print("Would reboot if running on Raspberry Pi")
 
     def shutdown_system(self):
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b"Shutting down system...")
         print("Shutting down system...")
-        subprocess.run(['sudo', 'shutdown', 'now'])
-    
-    def capture_image(self):
-        # Capture an image using the PiCamera
-         # Capture and save the image 
-        filename = f"/home/user/camera/captured_image_{int(time.time())}.jpg"
-        camera.capture_file(filename)
-        self.wfile.write(b"caprure")
-        print("Image captured and saved.")
+        
+        if IS_RASPBERRY_PI:
+            subprocess.run(['sudo', 'shutdown', 'now'])
+        else:
+            print("Would shutdown if running on Raspberry Pi")
+            
+    def get_number(self):
+        set_number_file = os.path.join(IMAGE_DIR, 'set_number.txt')
+        with open(set_number_file, 'r+') as f:
+            set_number = int(f.read().strip())
+        return set_number
+     
+    def capture_images(self): 
+        if not IS_RASPBERRY_PI:
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Image capture would happen here (development mode)")
+            print("Would capture image if running on Raspberry Pi")
+            return
+            
+        set_number_file = os.path.join(IMAGE_DIR, 'set_number.txt')
+        with open(set_number_file, 'r+') as f:
+            set_number = int(f.read().strip())
+            f.seek(0)
+            f.truncate()
+            f.write(str(set_number + 1))
+            
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Image capture in progress...\n")
+        print("Capturing...") 
+        filename = os.path.join(IMAGE_DIR, f'{self.get_number()}z.jpg')
+        camera.capture_file(filename) 
+        print(f"Image captured! {self.get_number()}") 
+        time.sleep(1) 
+        self.wfile.write(b"Image capture done\n")
 
-# def start_http_server():
-#     os.chdir(IMAGE_DIR)
-#     with TCPServer(("192.168.232.194", PORT), MyHTTPRequestHandler) as httpd:
-#         print(f"Serving images on port {PORT}...")
-#         httpd.serve_forever()
-# Start the server with custom handler
+class ThreadedTCPServer(ThreadingMixIn, TCPServer):
+    allow_reuse_address = True
+
 def start_http_server():
-    print("Starting HTTP server...")
-    os.chdir(IMAGE_DIR)  # Change directory to the image folder
-    with TCPServer(("localhost", PORT), MyHTTPRequestHandler) as httpd:
-        print(f"Serving images on portss {PORT}...")
+    os.chdir(IMAGE_DIR)
+    server_address = ('', PORT)  # Empty string means listen on all available interfaces
+    with ThreadedTCPServer(server_address, MyHTTPRequestHandler) as httpd:
+        print(f"Serving images on port {PORT}...")
         httpd.serve_forever()
-
-
-def send_images_to_phone(images):
-    print("Images available for download:")
-    for image in images:
-        print(f"Image: {image}")
-        # List images for user to select, preview, and delete if needed.
-        # This will be handled through the HTTP interface.
-
-def delete_image(image_path):
-    try:
-        os.remove(image_path)
-        print(f"Deleted image: {image_path}")
-    except Exception as e:
-        print(f"Error deleting image: {e}")
-
-def serving():
-    print("waiting for  images to be received...")
-    # Create a TCP/IP socket
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = ('localhost', 65432)
-    server_socket.bind(server_address)
-
-    # Listen for incoming connections
-    server_socket.listen(2)
-
-    print('Server is listening...')
-
-    while True:
-        connection, client_address = server_socket.accept()
-        try:
-            print('Connection from', client_address)
-            
-            # Receive the image data in chunks
-            image_data = b''
-            while True:
-                data = connection.recv(2048)
-                if not data:
-                    break
-                image_data += data
-            # Save the image to the current directory
-            image.save('received_image.png')
-            # Convert the byte data to an image
-            image = Image.open(io.BytesIO(image_data))
-            image.show()
-            
-            print('Image received and displayed.')
-            
-        finally:
-            connection.close()
 
 if __name__ == '__main__':
     try:
-        print_ip_address()
-        serving()
-        # Start the HTTP server in a separate thread
+        print(f"Server running at http://{current_ip}:{PORT}/")
         server_thread = threading.Thread(target=start_http_server)
-        server_thread.daemon = True  # Daemonize the thread so it stops on exit
+        server_thread.daemon = True
         server_thread.start()
-        server_thread.join()  # Make sure the server keeps running
-        time.sleep(10)  # Wait for the server to start
         
+        # Keep the main thread alive
+        while True:
+            time.sleep(1)
     except KeyboardInterrupt:
         print("Server interrupted. Shutting down.")
+        if IS_RASPBERRY_PI:
+            GPIO.cleanup()
