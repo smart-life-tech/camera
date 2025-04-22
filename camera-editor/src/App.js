@@ -59,8 +59,8 @@ function App() {
     try {
       // This is a workaround since we can't directly parse the HTML response
       // In a production app, you would have an API endpoint that returns JSON
-      //const response = await axios.get(`https://${ip}:${port}/`);
-      const ngrokUrl = "https://ea19-102-88-109-227.ngrok-free.app"; // Replace with your actual ngrok URL
+      const response = await axios.get(`https://${ip}:${port}/`);
+      //const ngrokUrl = "https://ea19-102-88-109-227.ngrok-free.app"; // Replace with your actual ngrok URL
       const response = await axios.get(`${ngrokUrl}/`);
       // Parse the HTML to extract image URLs
       const html = response.data;
