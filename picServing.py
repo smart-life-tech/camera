@@ -29,6 +29,10 @@ try:
 except ImportError:
     print("PiCamera not found. Running in development mode without camera functionality.")
     IS_RASPBERRY_PI = False
+if IS_RASPBERRY_PI:
+    IMAGE_DIR = '/home/user/camera'  # Path on Raspberry Pi
+else:
+    IMAGE_DIR ='C:/Users/USER/OneDrive/Pictures/Screenshots/'  #  os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')  # Local development path
 
 # Get the local IP address
 def get_ip_address(interface=None):

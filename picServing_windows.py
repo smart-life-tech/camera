@@ -3,130 +3,33 @@ import os
 import threading
 from http.server import SimpleHTTPRequestHandler
 from socketserver import ThreadingMixIn, TCPServer
-from socketserver import TCPServer
 import socket
-import subprocess
 import requests
 from PIL import Image, ImageOps, ImageEnhance, ImageFilter
 
 # Define the directory where images will be stored
-try:
-    from picamera2 import Picamera2
-    import RPi.GPIO as GPIO
-    
-    # Setup the camera
-    TRIGGER_PIN = 27  
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(TRIGGER_PIN, GPIO.OUT)
-    
-    # Initialize the camera
-    camera = Picamera2()
-    camera.configure(camera.create_still_configuration(main={"size": camera.sensor_resolution}))
-    camera.start()
-    time.sleep(2)  # Allow time for camera to initialize
-    # Initialize the camera
-    camera = Picamera2()
+IMAGE_DIR = 'C:/Users/USER/OneDrive/Pictures/Screenshots/'
+PORT = 5000
+IS_RASPBERRY_PI = False
 
-    # Configure the camera with default settings
-    camera.configure(camera.create_still_configuration(main={"size": camera.sensor_resolution}))
-
-    # Start the camera
-    camera.start()
-    IS_RASPBERRY_PI = True
-except ImportError:
-    print("PiCamera not found. Running in development mode without camera functionality.")
-    IS_RASPBERRY_PI = False
-
-# Get the local IP address of the Raspberry Pi
-hostname = socket.gethostname()
-current_ip = socket.gethostbyname(hostname)
-def get_ip_address(interface=None):
-    if interface:
-        try:
-            result = subprocess.check_output(f'ip addr show {interface}', shell=True).decode('utf-8')
-            for line in result.split('\n'):
-                if 'inet ' in line:
-                    return line.split()[1].split('/')[0]
-        except subprocess.CalledProcessError as e:
-            print(f"Error getting IP address for interface {interface}: {e}")
-            return None
-    
-    # Fallback to socket method
+# Get the local IP address
+def get_ip_address():
     hostname = socket.gethostname()
     ip_address = socket.gethostbyname(hostname)
     return ip_address
-# Get IP address
-if IS_RASPBERRY_PI:
-    current_ip = get_ip_address('wlan0') or get_ip_address()
-else:
-    current_ip = get_ip_address() or 'localhost'
 
+current_ip = get_ip_address()
 print(f"Server IP address: {current_ip}")
-current_ip = current_ip
-file_path = '/home/user/camera/example.txt'
-def read_stored_ip(file_path):
-    if os.path.exists(file_path):
-        with open(file_path, 'r') as file:
-            return file.read().strip()
-    return None
 
-# Function to write the new IP address to the file
-def write_ip_to_file(file_path, ip):
-    with open(file_path, 'w') as file:
-        file.write(ip)
-    
-    # Set a maximum number of retries
-    max_retries = 3
-    retry_count = 0
-    
-    while retry_count < max_retries:
-        try:
-            url = 'https://christlight.pythonanywhere.com/write'
-            data = {'content': ip}
-            response = requests.post(url, json=data, timeout=10)  # Add 10-second timeout
-            print(response.json())
-            if response.status_code == 200:
-                print("IP address sent successfully.")
-                break
-        except requests.exceptions.RequestException as e:
-            print(f"Error: {e}")
-            retry_count += 1
-            if retry_count >= max_retries:
-                print("Maximum retries reached. Continuing without sending IP.")
-                break
-        time.sleep(5)  # Reduced from 10 to 5 seconds
-
-# Read the stored IP address
-stored_ip = read_stored_ip(file_path)
-
-# Check if the IP address has changed
-if stored_ip != current_ip:
-    # Update the stored IP address
-    write_ip_to_file(file_path, current_ip)
-else:
-    print("IP address has not changed.")
-
-
-# Allow some time for the camera to initialize
-time.sleep(2)
-count = 0
-
-IMAGE_DIR = 'C:/Users/USER/OneDrive/Pictures/Screenshots/'  # Ensure this is the correct directory
-PORT = 5000
-WPA_SUPPLICANT_FILE = '/etc/wpa_supplicant/wpa_supplicant.conf'
-# os.system('sudo ip addr add 192.168.233.194/24 dev wlan0')
-time.sleep(5)
-def get_ip_addresses():
-    hostname = socket.gethostname()  # Get the hostname of the Pi
-    ip_address = socket.gethostbyname(hostname)  # Get the corresponding IP address
-    return ip_address
-
-def print_ip_address():
-    ip_address = get_ip_address()
-    print(f"Raspberry Pi IP Address: {ip_address}")
-
+# Make sure the image directory exists
 if not os.path.exists(IMAGE_DIR):
     os.makedirs(IMAGE_DIR)
+
+# Create a set_number.txt file if it doesn't exist
+set_number_file = os.path.join(IMAGE_DIR, 'set_number.txt')
+if not os.path.exists(set_number_file):
+    with open(set_number_file, 'w') as f:
+        f.write('0')
 
 class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -141,23 +44,13 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         elif self.path.startswith('/download/'):
             image_name = self.path.split('/')[-1]
             self.download_image(image_name)
-        elif self.path == '/reboot':
-            self.reboot_system()
-        elif self.path == '/shutdown':
-            self.shutdown_system()
         elif self.path == '/capture':
-            GPIO.output(TRIGGER_PIN, GPIO.HIGH)
-            time.sleep(0.5)  # Keep the pin HIGH for 1 second
-            GPIO.output(TRIGGER_PIN, GPIO.LOW)
-            self.capture_images()
+            self.capture_dummy_image()
         else:
             return super().do_GET()
-            #self.list_images()
 
     def do_POST(self):
-        if self.path == '/update_wifi':
-            self.update_wifi_credentials()
-        elif self.path == '/save_edited_image':
+        if self.path == '/save_edited_image':
             self.save_edited_image()
         else:
             self.send_response(501)
@@ -215,7 +108,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
-        # Modern HTML with CSS and JavaScript for image editing
+        # HTML content (same as in the original file)
         html = """
         <!DOCTYPE html>
         <html lang="en">
@@ -319,20 +212,6 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                             <li class="nav-item">
                                 <a class="nav-link" href="/capture"><i class="fas fa-camera-retro"></i> Capture Image</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#wifiModal" data-bs-toggle="modal" data-bs-target="#wifiModal">
-                                    <i class="fas fa-wifi"></i> Wi-Fi Settings
-                                </a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="systemDropdown" role="button" data-bs-toggle="dropdown">
-                                    <i class="fas fa-cogs"></i> System
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="/reboot"><i class="fas fa-sync"></i> Reboot</a></li>
-                                    <li><a class="dropdown-item" href="/shutdown"><i class="fas fa-power-off"></i> Shutdown</a></li>
-                                </ul>
-                            </li>
                         </ul>
                     </div>
                 </div>
@@ -373,32 +252,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                     </div>
             """
         
-            html += """
-                </div>
-            </div>
-
-            <!-- Wi-Fi Settings Modal -->
-            <div class="modal fade" id="wifiModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title"><i class="fas fa-wifi"></i> Wi-Fi Settings</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="wifiForm" onsubmit="updateWifiCredentials(event)">
-                                <div class="mb-3">
-                                    <label for="ssid" class="form-label">SSID:</label>
-                                    <input type="text" class="form-control" id="ssid" name="ssid" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="password" class="form-label">Password:</label>
-                                    <input type="password" class="form-control" id="password" name="password" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Update Wi-Fi</button>
-                            </form>
-                        </div>
-                    </div>
+        html += """
                 </div>
             </div>
 
@@ -979,52 +833,6 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
                     }, 'image/jpeg');
                 }
                 
-                function updateWifiCredentials(event) {
-                    event.preventDefault();
-                    
-                    const ssid = document.getElementById('ssid').value;
-                    const password = document.getElementById('password').value;
-                    
-                    if (!ssid || !password) {
-                        alert('Please enter both SSID and password');
-                        return;
-                    }
-                    
-                    // Show loading indicator
-                    const submitBtn = event.target.querySelector('button[type="submit"]');
-                    const originalText = submitBtn.innerHTML;
-                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
-                    submitBtn.disabled = true;
-                    
-                    fetch('/update_wifi', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `ssid=${encodeURIComponent(ssid)}&password=${encodeURIComponent(password)}`
-                    })
-                    .then(response => {
-                        // Reset button state
-                        submitBtn.innerHTML = originalText;
-                        submitBtn.disabled = false;
-                        
-                        if (response.ok) {
-                            alert('WiFi credentials updated successfully locally. You may need to reboot for changes to take effect.');
-                            document.querySelector('#wifiModal .btn-close').click();
-                        } else {
-                            alert('Failed to update WiFi settings.');
-                        }
-                    })
-                    .catch(error => {
-                        // Reset button state
-                        submitBtn.innerHTML = originalText;
-                        submitBtn.disabled = false;
-                        
-                        console.error('Error:', error);
-                        alert('Error updating WiFi credentials.');
-                    });
-                }
-                
                 // Event listeners for sliders
                 document.getElementById('brightness').addEventListener('input', function(e) {
                     brightness = parseInt(e.target.value);
@@ -1060,6 +868,7 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
         </html>
         """
         self.wfile.write(html.encode())
+
     def delete_image(self, image_name):
         image_path = os.path.join(IMAGE_DIR, image_name)
         try:
@@ -1083,161 +892,54 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b"Image not found.")
 
-    def update_wifi_credentials(self):
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length).decode()
-        
-        # Parse the form data
-        from urllib.parse import parse_qs, unquote
-        
-        # Parse the query string and extract parameters
-        params = parse_qs(post_data)
-        
-        # Get the first value for each parameter and decode URL encoding
-        ssid = unquote(params.get('ssid', [''])[0])
-        password = unquote(params.get('password', [''])[0])
-
-        if not ssid or not password:
-            self.send_response(400)
-            self.end_headers()
-            self.wfile.write(b"SSID and Password are required.")
-            return
-
-        try:
-            # Read existing configuration
-            current_config = ""
-            if os.path.exists(WPA_SUPPLICANT_FILE):
-                with open(WPA_SUPPLICANT_FILE, 'r') as f:
-                    current_config = f.read()
-        
-            # Check if this network is already configured
-            if f'ssid="{ssid}"' in current_config:
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(f"WiFi network '{ssid}' is already configured.".encode())
-                return
-        
-            # If this is a new file, create the header
-            if not current_config or current_config.strip() == "":
-                new_config = f"""country=US
-                    ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-                    update_config=1
-
-                    """
-            else:
-                # Keep the existing config
-                new_config = current_config
-            
-                # Make sure there's a blank line at the end if not already present
-                if not new_config.endswith('\n\n'):
-                    new_config = new_config.rstrip('\n') + '\n\n'
-        
-            # Append the new network configuration
-            new_config += f"""network={{
-                    ssid="{ssid}"
-                    psk="{password}"
-                    priority=10
-                }}
-                """
-        
-            # Write the updated configuration
-            with open(WPA_SUPPLICANT_FILE, 'w') as f:
-                f.write(new_config)
-        
-            # Send the same credentials to PythonAnywhere for storage
-            try:
-            
-                # Prepare data for PythonAnywhere
-                data = {
-                    'ssid': ssid,
-                    'password': password
-                }
-                # url = 'https://christlight.pythonanywhere.com/wifi'
-                # #data = {'content': ip}
-                # response = requests.post(url, json=data)
-                # print(response.json())    
-                # Send to PythonAnywhere
-                try:
-                    url = 'https://christlight.pythonanywhere.com/wifi'  # Make sure this is the correct endpoint
-                    response = requests.post(
-                        url,
-                        json=data,
-                    )
-                    
-                    if response.status_code == 200:
-                        print(f"WiFi credentials for '{ssid}' saved successfully to cloud")
-                    else:
-                        print(f"Failed to save WiFi credentials to cloud: {response.status_code} - {response.text}")
-                        # Continue even if cloud update fails
-                except Exception as e:
-                    print(f"Error sending WiFi credentials to cloud: {e}")
-                    # Continue even if cloud update fails
-            
-            except Exception as e:
-                print(f"Error sending WiFi credentials : {e}")
-                # Continue even if PythonAnywhere update fails
-            
-            print(f"WiFi network '{ssid}' added locally.")
-            try:
-                # Cloud update code here...
-                pass
-            except Exception as e:
-                print(f"Cloud update failed but local update succeeded: {e}")
-            
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(f"WiFi network '{ssid}' added. Please reboot the device.".encode())
-        except Exception as e:
-            self.send_response(500)
-            self.end_headers()
-            self.wfile.write(b"Failed to update Wi-Fi credentials.")
-            print(f"Error: {e}")
-
-    def reboot_system(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"Rebooting system...")
-        print("Rebooting system...")
-        subprocess.run(['sudo', 'reboot'])
-
-    def shutdown_system(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"Shutting down system...")
-        print("Shutting down system...")
-        subprocess.run(['sudo', 'shutdown', 'now'])
     def get_number(self):
         set_number_file = os.path.join(IMAGE_DIR, 'set_number.txt')
-        with open(set_number_file, 'r+') as f:
+        with open(set_number_file, 'r') as f:
             set_number = int(f.read().strip())
         return set_number
-     
-    
-    def capture_images(self): 
-        global count 
-        #while True: 
-        # Capture and save the 
+
+    def capture_dummy_image(self):
+        # For Windows, we'll create a dummy image since we don't have a camera
+        from PIL import Image
+        
+        # Create a set_number.txt file if it doesn't exist
         set_number_file = os.path.join(IMAGE_DIR, 'set_number.txt')
+        if not os.path.exists(set_number_file):
+            with open(set_number_file, 'w') as f:
+                f.write('0')
+        
+        # Read and increment the set number
         with open(set_number_file, 'r+') as f:
             set_number = int(f.read().strip())
             f.seek(0)
             f.truncate()
             f.write(str(set_number + 1))
-            f.close()
-            
+        
+        # Create a dummy image (colored gradient)
+        width, height = 640, 480
+        image = Image.new('RGB', (width, height), color='white')
+        
+        # Draw a simple gradient
+        pixels = image.load()
+        for i in range(width):
+            for j in range(height):
+                r = int(255 * i / width)
+                g = int(255 * j / height)
+                b = int(255 * (i + j) / (width + height))
+                pixels[i, j] = (r, g, b)
+        
+        # Save the image
+        filename = f'{set_number}z.jpg'
+        image_path = os.path.join(IMAGE_DIR, filename)
+        image.save(image_path)
+        
+        print(f"Dummy image captured: {filename}")
         
         self.send_response(200)
+        self.send_header('Content-type', 'text/html')
         self.end_headers()
-        self.wfile.write(b"image capture in progress... \n")
-        print("capturing...") 
-        filename = os.path.join(IMAGE_DIR, f'{self.get_number()}z.jpg')
-        camera.capture_file(filename) 
-        count =count + 1
-        print("Image captured!",self.get_number()) 
-        time.sleep(1) 
-        self.wfile.write(b"image capture done \n")
-        #self.wfile.write(b'<a href="/refresh">back home</a>')
-        # Wait for 1 second before capturing the next image
+        self.wfile.write(b"Dummy image captured. <a href='/'>Return to gallery</a>")
+
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
@@ -1247,43 +949,29 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200)
         self.end_headers()
+
 class ThreadedTCPServer(ThreadingMixIn, TCPServer):
-    pass
+    allow_reuse_address = True
+
 def start_http_server():
     os.chdir(IMAGE_DIR)
-    server_address = (current_ip, PORT)
+    server_address = ('', PORT)
     with ThreadedTCPServer(server_address, MyHTTPRequestHandler) as httpd:
-        print(f"Serving images on port {PORT}...")
+        print(f"Serving images on http://{current_ip}:{PORT}")
         httpd.serve_forever()
 
-def send_images_to_phone(images):
-    print("Images available for download:")
-    for image in images:
-        print(f"Image: {image}")
-
-def delete_image(image_path):
-    try:
-        os.remove(image_path)
-        print(f"Deleted image: {image_path}")
-    except Exception as e:
-        print(f"Error deleting image: {e}")
-
-def capture_images(): 
-    global count 
-    #while True: 
-    # Capture and save the image 
-    camera.capture_file(f'high_res_image{count}.jpg') 
-    count += 1 
-    print("Image captured!") 
-    time.sleep(1) 
-    # Wait for 1 second before capturing the next image
 if __name__ == '__main__':
     try:
-        print_ip_address()
-        server_thread = threading.Thread(target=start_http_server)
-        server_thread.daemon = True
-        server_thread.start()
-        server_thread.join()
-        time.sleep(100)
+        print(f"Server IP address: {current_ip}")
+        print(f"Image directory: {IMAGE_DIR}")
+        
+        # Create set_number.txt if it doesn't exist
+        set_number_file = os.path.join(IMAGE_DIR, 'set_number.txt')
+        if not os.path.exists(set_number_file):
+            with open(set_number_file, 'w') as f:
+                f.write('0')
+        
+        # Start the server
+        start_http_server()
     except KeyboardInterrupt:
         print("Server interrupted. Shutting down.")
