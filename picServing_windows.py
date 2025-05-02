@@ -8,7 +8,7 @@ import requests
 from PIL import Image, ImageOps, ImageEnhance, ImageFilter
 
 # Define the directory where images will be stored
-IMAGE_DIR = 'C:/Users/USER/OneDrive/Pictures/Screenshots/'
+IMAGE_DIR = 'C:/Users/USER/Downloads'
 PORT = 5000
 IS_RASPBERRY_PI = False
 
