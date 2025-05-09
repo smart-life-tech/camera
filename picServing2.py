@@ -8,13 +8,14 @@ import socket
 import subprocess
 import requests
 from PIL import Image
-
+import os
 from picamera2 import Picamera2
-import RPi.GPIO as GPIO
-# Setup the camera
-TRIGGER_PIN = 27  
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(TRIGGER_PIN, GPIO.OUT)
+if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+    import RPi.GPIO as GPIO
+    # Setup the camera
+    TRIGGER_PIN = 27  
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(TRIGGER_PIN, GPIO.OUT)
 # Get the local IP address of the Raspberry Pi
 hostname = socket.gethostname()
 current_ip = socket.gethostbyname(hostname)
