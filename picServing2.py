@@ -10,8 +10,8 @@ import requests
 from PIL import Image
 import os
 from picamera2 import Picamera2
+import RPi.GPIO as GPIO
 if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-    import RPi.GPIO as GPIO
     # Setup the camera
     TRIGGER_PIN = 27  
     GPIO.setmode(GPIO.BCM)
