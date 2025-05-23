@@ -3,6 +3,8 @@ from PIL import Image
 import io
 import subprocess
 import os
+import time
+import json
 IMAGE_DIR = '/home/user/camera'  # Ensure this is the correct directory
 def get_ip_address(interface):
     try:
@@ -36,24 +38,62 @@ def get_number():
     f.close()
     return set_number
 toggle = True
+CAMERA_CONFIG_FILE = os.path.join(IMAGE_DIR, 'camera_config.json')
+
+def load_camera_config():
+    if os.path.exists(CAMERA_CONFIG_FILE):
+        with open(CAMERA_CONFIG_FILE, 'r') as f:
+            return json.load(f)
+    return {"cameras": {}}
+
+def save_camera_config(config):
+    with open(CAMERA_CONFIG_FILE, 'w') as f:
+        json.dump(config, f, indent=2)
+
+camera_config = load_camera_config()
+connection_order = []
+
 while True:
     connection, client_address = server_socket.accept()
     try:
-        print('Connection from', client_address)
-        if old_address != client_address:
-            print('Client changed. Closing connection.')
-            if toggle:
-                toggle = False
-                filename = os.path.join(IMAGE_DIR, f'{get_number()}x.jpg')
+        client_ip = client_address[0]
+        print(f'Connection from {client_ip}')
+        
+        # Get the current set number
+        set_number = get_number()
+        
+        # Track connection order for this set
+        if client_ip not in connection_order:
+            connection_order.append(client_ip)
+        
+        # If we have exactly 2 unique connections for this set, assign them as X and Y
+        if len(connection_order) <= 2:
+            # First connection in this set is camera X, second is camera Y
+            if connection_order.index(client_ip) == 0:
+                camera_type = 'x'
+                camera_config["cameras"][client_ip] = {"type": "x", "last_seen": time.time()}
             else:
-                toggle = True
-                filename = os.path.join(IMAGE_DIR, f'{get_number()}y.jpg')
+                camera_type = 'y'
+                camera_config["cameras"][client_ip] = {"type": "y", "last_seen": time.time()}
             
-            count=count+1
-            old_address=client_address
+            save_camera_config(camera_config)
         else:
-            #count=count+1
-            print("count continued",count)
+            # If we have more than 2 connections, use previous assignments if available
+            if client_ip in camera_config["cameras"]:
+                camera_type = camera_config["cameras"][client_ip]["type"]
+                camera_config["cameras"][client_ip]["last_seen"] = time.time()
+                save_camera_config(camera_config)
+            else:
+                # If this is a new IP not seen before, assign based on timing
+                timestamp = int(time.time())
+                camera_type = f"unknown_{timestamp}"
+        
+        filename = os.path.join(IMAGE_DIR, f'{set_number}{camera_type}.jpg')
+        print(f'Identified as camera {camera_type.upper()} (IP: {client_ip})')
+        print(f'Saving image to: {filename}')
+            
+        count=count+1
+        old_address=client_address
             
         print(filename)
         # Receive the image data in chunks
@@ -74,6 +114,15 @@ while True:
         #image.show()
         
         print('Image received.')
+        # If we've received both X and Y images for this set, reset for next set
+        if len(connection_order) >= 2:
+            # Check if both x and y files exist for this set
+            x_file = os.path.join(IMAGE_DIR, f'{set_number}x.jpg')
+            y_file = os.path.join(IMAGE_DIR, f'{set_number}y.jpg')
+            if os.path.exists(x_file) and os.path.exists(y_file):
+                # Reset connection order for next set
+                connection_order = []
+                print(f"Set {set_number} complete. Ready for next set.")
     except Exception as e:
         print(f"Error: {e}")
     finally:
