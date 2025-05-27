@@ -137,38 +137,143 @@ class MyHTTPRequestHandler(SimpleHTTPRequestHandler):
 
     def list_images(self):
         images = [f for f in os.listdir(IMAGE_DIR) if f.endswith('.jpg')]
+        # Sort images alphabetically
+        images.sort()
+        
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
-        self.wfile.write(b"<h3>Update Wi-Fi Credentials</h3>")
+        # Start HTML with better styling
         self.wfile.write(b"""
-        <form action="/update_wifi" method="POST">
-            <label for="ssid">SSID:</label><br>
-            <input type="text" id="ssid" name="ssid" required><br>
-            <label for="password">Password:</label><br>
-            <input type="password" id="password" name="password" required><br><br>
-            <input type="submit" value="Update Wi-Fi">
-        </form>
+        <html>
+        <head>
+            <title>Camera Images</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .image-container { 
+                    display: flex; 
+                    flex-wrap: wrap; 
+                    gap: 15px; 
+                    margin: 20px 0; 
+                }
+                .image-item { 
+                    border: 1px solid #ddd; 
+                    border-radius: 8px; 
+                    padding: 10px; 
+                    text-align: center; 
+                    background-color: #f9f9f9;
+                    width: 200px;
+                }
+                .image-item img { 
+                    width: 180px; 
+                    height: 135px; 
+                    object-fit: cover; 
+                    border-radius: 4px;
+                }
+                .image-name { 
+                    font-weight: bold; 
+                    margin: 8px 0; 
+                    font-size: 14px;
+                }
+                .image-actions { 
+                    display: flex; 
+                    justify-content: space-around; 
+                    margin-top: 8px;
+                }
+                .image-actions a { 
+                    text-decoration: none; 
+                    padding: 4px 8px; 
+                    border-radius: 4px; 
+                    font-size: 12px;
+                }
+                .delete-btn { background-color: #ff4444; color: white; }
+                .download-btn { background-color: #4CAF50; color: white; }
+                .view-btn { background-color: #2196F3; color: white; }
+                .controls { 
+                    background-color: #f0f0f0; 
+                    padding: 15px; 
+                    border-radius: 8px; 
+                    margin-bottom: 20px;
+                }
+                .wifi-form { 
+                    background-color: #e8f4f8; 
+                    padding: 15px; 
+                    border-radius: 8px; 
+                    margin-bottom: 20px;
+                }
+                .wifi-form input[type="text"], .wifi-form input[type="password"] {
+                    width: 200px; 
+                    padding: 5px; 
+                    margin: 5px;
+                }
+                .system-controls a {
+                    margin-right: 15px;
+                    padding: 8px 12px;
+                    background-color: #007bff;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 4px;
+                }
+            </style>
+        </head>
+        <body>
         """)
 
-        self.wfile.write(b"<br><h3>System Controls</h3>")
-        self.wfile.write(b'<a href="/reboot">Reboot</a> | <a href="/shutdown">Shutdown</a> | <a href="/capture">capture image</a>')
-        self.wfile.write(b"</body></html>")
+        # Wi-Fi Configuration Section
+        self.wfile.write(b"""
+        <div class="wifi-form">
+            <h3>Update Wi-Fi Credentials</h3>
+            <form action="/update_wifi" method="POST">
+                <label for="ssid">SSID:</label><br>
+                <input type="text" id="ssid" name="ssid" required><br>
+                <label for="password">Password:</label><br>
+                <input type="password" id="password" name="password" required><br><br>
+                <input type="submit" value="Update Wi-Fi">
+            </form>
+        </div>
+        """)
+
+        # System Controls Section
+        self.wfile.write(b"""
+        <div class="controls">
+            <h3>System Controls</h3>
+            <div class="system-controls">
+                <a href="/reboot">Reboot</a>
+                <a href="/shutdown">Shutdown</a>
+                <a href="/capture">Capture Image</a>
+                <a href="/refresh">Refresh Page</a>
+            </div>
+        </div>
+        """)
         
-        self.wfile.write(b"<html><head><title>Images</title>")
-        self.wfile.write(b"<style>img { width: 150px; margin: 10px; } </style></head><body>")
-        self.wfile.write(b"<h2>Captured Images</h2>")
+        # Images Section
+        self.wfile.write(f"<h2>Captured Images ({len(images)} total)</h2>".encode())
         
-        for image in images:
-            image_url = f"/{image}"
-            download_url = f"/download/{image}"
-            self.wfile.write(f'<div style="display:inline-block; text-align:center; margin:10px;">'.encode())
-            self.wfile.write(f'<a href="{image_url}"><img src="{image_url}" alt="{image}"></a><br>'.encode())
-            self.wfile.write(f'{image}'.encode())
-            self.wfile.write(f'<a href="/delete/{image}">Delete</a>'.encode())
-            self.wfile.write(f'<a href="{download_url}">Download</a>'.encode())
-            self.wfile.write(b"</div>")
+        if not images:
+            self.wfile.write(b"<p>No images found. Click 'Capture Image' to take a photo.</p>")
+        else:
+            self.wfile.write(b'<div class="image-container">')
+            
+            for image in images:
+                image_url = f"/{image}"
+                download_url = f"/download/{image}"
+                delete_url = f"/delete/{image}"
+                
+                self.wfile.write(f"""
+                <div class="image-item">
+                    <a href="{image_url}" target="_blank" class="view-btn">
+                        <img src="{image_url}" alt="{image}" title="Click to view full size">
+                    </a>
+                    <div class="image-name">{image}</div>
+                    <div class="image-actions">
+                        <a href="{delete_url}" class="delete-btn" onclick="return confirm('Delete {image}?')">Delete</a>
+                        <a href="{download_url}" class="download-btn">Download</a>
+                    </div>
+                </div>
+                """.encode())
+            
+            self.wfile.write(b'</div>')
 
         self.wfile.write(b"</body></html>")
 

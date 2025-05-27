@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 # Configuration
 base_ip = "192.168."  # Base IP to scan
-port = 22            # Port to check for connections (SSH)
+port = 80            # Port to check for connections (SSH)
 threads = 100        # Number of threads for parallel scanning
 
 def ping_and_check(ip):
