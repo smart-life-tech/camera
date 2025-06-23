@@ -105,3 +105,6 @@ Update your `package.json` file to include the necessary scripts and dependencie
     ]
   }
 }
+#!/usr/bin/python3
+#sudo /usr/bin/python /home/user/camera/cameraphone.py
+#exit 0

@@ -168,7 +168,7 @@ def main():
     
     while True:
         try:
-            #run_maintenance()
+            run_maintenance()
             print(f"Sleeping for {CHECK_INTERVAL} seconds")
             time.sleep(CHECK_INTERVAL)
         except KeyboardInterrupt:
